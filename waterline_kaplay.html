@@ -1,106 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>WATERLINE - Desert Operative</title>
-<style>
-    :root {
-        --bg: #0a0a0c; --panel: #151518; --border: #333;
-        --text: #e0e0e0; --accent: #00ccff; --warn: #ff4444;
-        --metal: #a0a0b0; --cloth: #d0c0a0; --plastic: #ffaa00;
-        --food: #88ff88; --junk: #aaa;
-    }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; overflow:hidden; user-select:none; }
-    #intro { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:200; text-align:center; color:#fff; }
-    #splash { position:fixed; inset:0; background:rgba(0,0,0,0.98); display:none; align-items:center; justify-content:center; flex-direction:column; z-index:300; font-size:2em; text-shadow:0 0 20px #f00; color:#fff; }
-    #ui-top { position: fixed; top: 0; left: 0; right: 0; height: 40px; background: rgba(10,10,12,0.9); border-bottom: 2px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 100; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 0 #000; }
-    .stat { display: flex; align-items: center; gap: 5px; }
-    .val { color: var(--accent); }
-    .warn-val { color: var(--warn); }
-    #game-container { position: relative; width: 100vw; height: 100vh; }
-    canvas { display: block; image-rendering: pixelated; }
-    #minimap-container { position: fixed; top: 50px; right: 10px; border: 2px solid var(--border); background: #000; z-index: 50; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-    #context-panel { position: fixed; bottom: 10px; right: 10px; width: 340px; background: rgba(20,20,25,0.95); border: 1px solid var(--accent); padding: 15px; display: none; z-index: 60; border-radius: 4px; box-shadow: 0 0 15px rgba(0, 204, 255, 0.1); }
-    #context-title { font-size: 18px; margin-bottom: 5px; color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 5px; }
-    #context-desc { font-size: 12px; color: #aaa; margin-bottom: 15px; min-height: 30px; }
-    .btn { display: block; width: 100%; background: #222; color: #fff; border: 1px solid #444; padding: 10px; margin-bottom: 8px; cursor: pointer; text-align: left; transition: 0.2s; border-radius: 3px; }
-    .btn:hover:not(:disabled) { background: #333; border-color: var(--accent); padding-left: 15px; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-close { background: #422; text-align: center; margin-top: 15px; }
-    .btn-close:hover { background: #622; border-color: var(--warn); padding-left: 10px; }
-    .cost { float: right; font-size: 11px; color: #aaa; }
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--border); padding: 10px 20px; border-radius: 20px; font-weight: bold; display: none; z-index: 100; transition: opacity 0.3s; }
-    #controls-legend { position: fixed; left: 10px; bottom: 10px; font-size: 11px; color: #888; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 4px; pointer-events: none; }
-    #controls-legend kbd { background: #333; padding: 2px 5px; border-radius: 3px; color: #ddd; }
-    #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; transition: background-color 2s ease; }
+  <head>
+    <meta charset="UTF-8">
+    <title>WATERLINE - Desert Operative</title>
+    <style>
+      :root {
+        --bg: #0a0a0c;
+        --panel: #151518;
+        --border: #333;
+        --text: #e0e0e0;
+        --accent: #00ccff;
+        --warn: #ff4444;
+        --metal: #a0a0b0;
+        --cloth: #d0c0a0;
+        --plastic: #ffaa00;
+        --food: #88ff88;
+        --junk: #aaa;
+      }
 
-/* KAPLAY handles the world; CSS is only the interface. */
-#game {position:absolute;inset:0;width:100%;height:100%;outline:none;}
-#intro {cursor:pointer;padding:24px;box-sizing:border-box;}
-#intro h1 {color:#00ccff;letter-spacing:0.2em;font-size:clamp(36px,6vw,72px);margin-bottom:16px;}
-#ui-top {gap:12px;flex-wrap:wrap;height:auto;min-height:42px;padding:5px 10px;box-sizing:border-box;}
-#mini-game {position:fixed;z-index:65;top:37%;left:50%;transform:translate(-50%,-50%);width:min(460px,90vw);padding:24px 28px;background:rgba(10,12,25,.96);border:4px solid #00ccff;text-align:center;box-shadow:0 16px 50px #000;}
-#mini-game h2 {font-size:21px;color:#fff;margin:0;}
-#mini-game p {font-size:13px;color:#ddd;}
-.mini-track {height:13px;background:#161d23;margin:15px 0;border:1px solid #4d6067;}
-.mini-track>div {height:100%;background:#00e9a4;width:0;}
-.time-track {height:9px;}
-.time-track>div {background:#ffcc44;width:100%;}
-#context-panel {max-height:min(70vh,650px);overflow:auto;box-sizing:border-box;}
-#controls-legend {z-index:48;line-height:1.8;}
-@media(max-width:850px) {#controls-legend {font-size:10px;bottom:4px;left:4px;}#context-panel {width:min(340px,95vw);}#ui-top{font-size:11px;}#minimap-container{top:90px;}}
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
 
-</style>
-</head>
-<body>
+      #intro {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 200;
+        text-align: center;
+        color: #fff;
+      }
 
-<div id="intro">
-    <h1>WATERLINE</h1>
-    <p style="max-width:600px;font-size:1.1em;">
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.98);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 300;
+        font-size: 2em;
+        text-shadow: 0 0 20px #f00;
+        color: #fff;
+      }
+
+      #ui-top {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: rgba(10, 10, 12, 0.9);
+        border-bottom: 2px solid var(--border);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 100;
+        font-weight: bold;
+        font-size: 13px;
+        text-shadow: 1px 1px 0 #000;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .val {
+        color: var(--accent);
+      }
+
+      .warn-val {
+        color: var(--warn);
+      }
+
+      #game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+
+      #minimap-container {
+        position: fixed;
+        top: 50px;
+        right: 10px;
+        border: 2px solid var(--border);
+        background: #000;
+        z-index: 50;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      }
+
+      #context-panel {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        width: 340px;
+        background: rgba(20, 20, 25, 0.95);
+        border: 1px solid var(--accent);
+        padding: 15px;
+        display: none;
+        z-index: 60;
+        border-radius: 4px;
+        box-shadow: 0 0 15px rgba(0, 204, 255, 0.1);
+      }
+
+      #context-title {
+        font-size: 18px;
+        margin-bottom: 5px;
+        color: var(--accent);
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+      }
+
+      #context-desc {
+        font-size: 12px;
+        color: #aaa;
+        margin-bottom: 15px;
+        min-height: 30px;
+      }
+
+      .btn {
+        display: block;
+        width: 100%;
+        background: #222;
+        color: #fff;
+        border: 1px solid #444;
+        padding: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        text-align: left;
+        transition: 0.2s;
+        border-radius: 3px;
+      }
+
+      .btn:hover:not(:disabled) {
+        background: #333;
+        border-color: var(--accent);
+        padding-left: 15px;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-close {
+        background: #422;
+        text-align: center;
+        margin-top: 15px;
+      }
+
+      .btn-close:hover {
+        background: #622;
+        border-color: var(--warn);
+        padding-left: 10px;
+      }
+
+      .cost {
+        float: right;
+        font-size: 11px;
+        color: #aaa;
+      }
+
+      #toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid var(--border);
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: none;
+        z-index: 100;
+        transition: opacity 0.3s;
+      }
+
+      #controls-legend {
+        position: fixed;
+        left: 10px;
+        bottom: 10px;
+        font-size: 11px;
+        color: #888;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 4px;
+        pointer-events: none;
+      }
+
+      #controls-legend kbd {
+        background: #333;
+        padding: 2px 5px;
+        border-radius: 3px;
+        color: #ddd;
+      }
+
+      #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 10;
+        transition: background-color 2s ease;
+      }
+
+      /* KAPLAY handles the world; CSS is only the interface. */
+      #game {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        outline: none;
+      }
+
+      #intro {
+        cursor: pointer;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+
+      #intro h1 {
+        color: #00ccff;
+        letter-spacing: 0.2em;
+        font-size: clamp(36px, 6vw, 72px);
+        margin-bottom: 16px;
+      }
+
+      #ui-top {
+        gap: 12px;
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 42px;
+        padding: 5px 10px;
+        box-sizing: border-box;
+      }
+
+      #mini-game {
+        position: fixed;
+        z-index: 65;
+        top: 37%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(460px, 90vw);
+        padding: 24px 28px;
+        background: rgba(10, 12, 25, .96);
+        border: 4px solid #00ccff;
+        text-align: center;
+        box-shadow: 0 16px 50px #000;
+      }
+
+      #mini-game h2 {
+        font-size: 21px;
+        color: #fff;
+        margin: 0;
+      }
+
+      #mini-game p {
+        font-size: 13px;
+        color: #ddd;
+      }
+
+      .mini-track {
+        height: 13px;
+        background: #161d23;
+        margin: 15px 0;
+        border: 1px solid #4d6067;
+      }
+
+      .mini-track>div {
+        height: 100%;
+        background: #00e9a4;
+        width: 0;
+      }
+
+      .time-track {
+        height: 9px;
+      }
+
+      .time-track>div {
+        background: #ffcc44;
+        width: 100%;
+      }
+
+      #context-panel {
+        max-height: min(70vh, 650px);
+        overflow: auto;
+        box-sizing: border-box;
+      }
+
+      #controls-legend {
+        z-index: 48;
+        line-height: 1.8;
+      }
+
+      @media(max-width:850px) {
+        #controls-legend {
+          font-size: 10px;
+          bottom: 4px;
+          left: 4px;
+        }
+
+        #context-panel {
+          width: min(340px, 95vw);
+        }
+
+        #ui-top {
+          font-size: 11px;
+        }
+
+        #minimap-container {
+          top: 90px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="intro">
+      <h1>WATERLINE</h1>
+      <p style="max-width:600px;font-size:1.1em;">
         You are a special operative sent by an international charity into a war-torn desert nation ruled by a brutal totalitarian regime.<br><br>
         Undercover as a simple worker, you must dig wells, lay pipes, and build automation to deliver water before entire towns perish.<br>
         Sleep under friendly locals’ floorboards. Stay hidden.<br><br>
         The quota grows. Disasters strike. Charity airdrops are your only backup.<br><br>
         <strong>Press any key or click here to begin your mission.</strong>
-    </p>
-</div>
-
-<div id="splash"><div id="splash-text"></div><button id="restart-button" style="margin-top:30px;padding:15px 30px;font-size:1em;">RESTART MISSION</button></div>
-
-<div id="ui-top">
-    <div class="stat">💧 Water: <span id="ui-w" class="val">0</span> / <span id="ui-cap">15</span></div>
-    <div class="stat" style="color:var(--food)">🍞 Food: <span id="ui-f" class="val" style="color:var(--food)">3</span></div>
-    <div class="stat">⚙️ <span id="ui-m" style="color:var(--metal)">2</span> | 🧵 <span id="ui-c" style="color:var(--cloth)">2</span> | 🛢️ <span id="ui-p" style="color:var(--plastic)">1</span> | 🗑️ <span id="ui-junk" style="color:var(--junk)">0</span> | 🔌 <span id="ui-wire">0</span> | 🔋 <span id="ui-bat">0</span></div>
-    <div class="stat">👁️ Suspicion: <span id="ui-s" class="warn-val">0</span>%</div>
-    <div class="stat">Day <span id="ui-d" class="val">1</span> - <span id="ui-time">08:00</span></div>
-    <div class="stat" id="ui-weather-stat">🌤️ <span id="ui-weather" class="val">CLEAR</span></div>
-    <div class="stat" id="ui-mode" style="color:#aaa;">[DIG MODE]</div>
-</div>
-
-<div id="game-container">
-    <canvas id="game" tabindex="0" aria-label="WATERLINE game world"></canvas>
-    <div id="overlay"></div>
-    
-    <div id="minimap-container">
-        <canvas id="map" width="150" height="150"></canvas>
+      </p>
     </div>
 
-    <div id="context-panel">
+    <div id="splash">
+      <div id="splash-text"></div><button id="restart-button" style="margin-top:30px;padding:15px 30px;font-size:1em;">RESTART MISSION</button>
+    </div>
+
+    <div id="ui-top">
+      <div class="stat">💧 Water: <span id="ui-w" class="val">0</span> / <span id="ui-cap">15</span></div>
+      <div class="stat" style="color:var(--food)">🍞 Food: <span id="ui-f" class="val" style="color:var(--food)">3</span></div>
+      <div class="stat">⚙️ <span id="ui-m" style="color:var(--metal)">2</span> | 🧵 <span id="ui-c" style="color:var(--cloth)">2</span> | 🛢️ <span id="ui-p" style="color:var(--plastic)">1</span> | 🗑️ <span id="ui-junk" style="color:var(--junk)">0</span> | 🔌 <span id="ui-wire">0</span> | 🔋 <span id="ui-bat">0</span></div>
+      <div class="stat">👁️ Suspicion: <span id="ui-s" class="warn-val">0</span>%</div>
+      <div class="stat">Day <span id="ui-d" class="val">1</span> - <span id="ui-time">08:00</span></div>
+      <div class="stat" id="ui-weather-stat">🌤️ <span id="ui-weather" class="val">CLEAR</span></div>
+      <div class="stat" id="ui-mode" style="color:#aaa;">[DIG MODE]</div>
+    </div>
+
+    <div id="game-container">
+      <canvas id="game" tabindex="0" aria-label="WATERLINE game world"></canvas>
+      <div id="overlay"></div>
+
+      <div id="minimap-container">
+        <canvas id="map" width="150" height="150"></canvas>
+      </div>
+
+      <div id="context-panel">
         <div id="context-title">LOCATION</div>
         <div id="context-desc">Description</div>
         <div id="context-actions"></div>
         <button class="btn btn-close" id="close-panel">Close [ESC]</button>
-    </div>
+      </div>
 
-    <div id="toast" role="status">Message here</div>
-    <div id="mini-game" aria-live="polite" style="display:none">
-      <h2 id="mini-name">DIY ASSEMBLY</h2>
-      <p>RAPIDLY PRESS SPACE! <span id="mini-progress-text">0 / 0</span></p>
-      <div class="mini-track"><div id="mini-progress"></div></div>
-      <div class="mini-track time-track"><div id="mini-time"></div></div>
-    </div>
+      <div id="toast" role="status">Message here</div>
+      <div id="mini-game" aria-live="polite" style="display:none">
+        <h2 id="mini-name">DIY ASSEMBLY</h2>
+        <p>RAPIDLY PRESS SPACE! <span id="mini-progress-text">0 / 0</span></p>
+        <div class="mini-track">
+          <div id="mini-progress"></div>
+        </div>
+        <div class="mini-track time-track">
+          <div id="mini-time"></div>
+        </div>
+      </div>
 
-    <div id="controls-legend">
+      <div id="controls-legend">
         <div><kbd>WASD</kbd> / <kbd>Arrows</kbd> Move</div>
         <div><kbd>SPACE</kbd> Dig / Pipe</div>
         <div><kbd>E</kbd> Interact</div>
@@ -108,652 +395,1492 @@
         <div><kbd>P</kbd> Toggle Mode</div>
         <div><kbd>ENTER</kbd> Sleep</div>
         <div><kbd>K</kbd> / <kbd>Ctrl+S</kbd> Save | <kbd>L</kbd> Load</div>
+      </div>
     </div>
-</div>
 
 
-<script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
-<script>
-/* WATERLINE — KAPLAY 3001.0.19 port
- * Runtime: KAPLAY owns the WebGL world, camera, sprite components, update/input.
- * DOM only handles the accessible HUD, dialogs, minimap and announcements.
- */
-'use strict';
+    <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
+    <script>
+      /* WATERLINE — KAPLAY 3001.0.19 port
+       * Runtime: KAPLAY owns the WebGL world, camera, sprite components, update/input.
+       * DOM only handles the accessible HUD, dialogs, minimap and announcements.
+       */
+      'use strict';
 
-if (typeof kaplay !== 'function') {
-  document.body.innerHTML = '<div style="padding:30px;color:white;background:#16161c;font:18px sans-serif">KAPLAY could not load. Check your connection, or serve this file from a local HTTP server.</div>';
-  throw Error('KAPLAY script unavailable');
-}
-
-const K = kaplay({
-  canvas: document.querySelector('#game'),
-  background: [5, 5, 7],
-  crisp: true,
-  pixelDensity: 1,
-  debug: false,
-  global: false,
-  focus: true,
-});
-const TILE = 32, WORLD = 100, DAY_MINS = 1440;
-const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
-const SAVE_ID = 'waterline_kaplay_v2';
-const $ = (s) => document.getElementById(s);
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const key = (x,y) => x + ',' + y;
-const rnd = (n) => Math.floor(Math.random()*n);
-const C = {
-  void:K.rgb('#000000'), sand:K.rgb('#2c2318'), scrub:K.rgb('#253020'), rock:K.rgb('#252530'),
-  dug:K.rgb('#34333a'), shade:K.rgb('#181820'), scrap:K.rgb('#8c9195'),
-  cyan:K.rgb('#00ccff'), aqua:K.rgb('#6adcf4'), blue:K.rgb('#174a67'),
-  white:K.rgb('#e8edef'), orange:K.rgb('#ffa300'), red:K.rgb('#f04c45'),
-  green:K.rgb('#30a964'), darkGreen:K.rgb('#1c7142'), black:K.rgb('#15151c'),
-  brown:K.rgb('#75502e'), tan:K.rgb('#b49765'), gray:K.rgb('#6c727c'),
-  lightGray:K.rgb('#abb6c0'), gold:K.rgb('#f8d357'), deep:K.rgb('#284451'),
-  shadow:K.rgb('#101319'), leaf:K.rgb('#57bd53'), wine:K.rgb('#902f2e'),
-};
-const V = (x,y) => K.vec2(x,y);
-function rect(x,y,w,h,col) { K.drawRect({pos:V(x,y),width:w,height:h,color:col}); }
-function line(x1,y1,x2,y2,col,w=3) { K.drawLine({p1:V(x1,y1),p2:V(x2,y2),width:w,color:col}); }
-function poly(points,col) { K.drawPolygon({pts:points.map(p=>V(p[0],p[1])),color:col}); }
-function circle(x,y,r,col) { K.drawCircle({pos:V(x,y),radius:r,color:col}); }
-function textLabel(s,x,y,size=11,col=C.white) {
-  K.drawText({text:String(s),pos:V(x,y),size, font:'monospace', color:col});
-}
-
-const PLAYER_INIT = {x:50,y:50,w:0,cap:15,f:3,m:2,c:2,p:1,junk:0,seeds:0,rope:0,wire:0,battery:0};
-const STATE_INIT = {susp:0,day:1,time:480,pipeMode:false,buildMode:false,selectedBuild:null,weather:'clear'};
-const TECH_INIT = {filter:false,solar:false,pipe:false,purifier:false,reinforced:false};
-let player = {...PLAYER_INIT};
-let state = {...STATE_INIT};
-let tech = {...TECH_INIT};
-let world = [], towns = [], shops = [], works = [], shelters = [], posts = [], patrols = [], structures = [];
-let pipes = new Set(), tileWater = {};
-let started = false, ended = false, minigame = null, lastWarning = 0;
-let hudTimer = 0, movementTimer = 0, mapTimer = 0;
-let suppressUntil = 0;
-let mouseTile = {x:50,y:50};
-let audio = null;
-
-function reveal(x,y) {
-  for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++) {
-    const tx=x+dx,ty=y+dy;
-    if(tx>=0&&ty>=0&&tx<WORLD&&ty<WORLD) world[ty][tx].exp=true;
-  }
-}
-function newWorld() {
-  world = Array.from({length:WORLD},()=>Array.from({length:WORLD},()=>{
-    const roll=Math.random(), reg=roll<0.6?0:roll<0.85?1:2;
-    return {dug:false,exp:false,reg,wc:reg===0?0.05:reg===1?0.15:0.25,
-      junk:Math.random()<(reg===2?0.35:0.18),elev:rnd(4)};
-  }));
-}
-const townNames = ['Dusthaven','Ashen Wells','Scorchgate','Mirage Outpost','Drybone Crossing','Ruinridge','Sandveil','Cactus Refuge','Wastemarch','Oasis Fall'];
-function spawnPOI(count,info,reserved) {
-  const arr=[];
-  let tries=0;
-  while(arr.length<count && tries++<10000) {
-    const x=5+rnd(WORLD-10),y=5+rnd(WORLD-10);
-    if(reserved.some(a=>Math.hypot(a.x-x,a.y-y)<5)) continue;
-    const poi={...info,x,y}; arr.push(poi);reserved.push(poi);
-  }
-  return arr;
-}
-function newGameData() {
-  player={...PLAYER_INIT};state={...STATE_INIT};tech={...TECH_INIT};
-  structures=[];pipes=new Set();tileWater={};
-  newWorld();
-  const used=[{x:player.x,y:player.y}];
-  towns=spawnPOI(4,{need:30,st:0,name:''},used);
-  towns.forEach(t=>t.name=townNames[rnd(townNames.length)]);
-  shops=spawnPOI(3,{type:'shop'},used);
-  works=spawnPOI(3,{type:'work'},used);
-  shelters=spawnPOI(4,{type:'shelter'},used);
-  posts=spawnPOI(5,{type:'post',r:5},used);
-  patrols=[];
-  for(const post of posts) for(let i=0;i<2;i++) patrols.push({
-    x:post.x,y:post.y,ox:post.x,oy:post.y,a:Math.random()*Math.PI*2,speed:0.03+Math.random()*0.02
-  });
-  reveal(player.x,player.y);
-}
-function readWater(x,y) { return tileWater[key(x,y)]||0; }
-function writeWater(x,y,v) { const id=key(x,y); if(v<=0) delete tileWater[id];else tileWater[id]=v; }
-function addWater(x,y,v) { writeWater(x,y,readWater(x,y)+v); }
-function nearPost(x,y) {return posts.some(o=>Math.hypot(o.x-x,o.y-y)<=o.r);}
-function modifySusp(delta) {state.susp=clamp(state.susp+delta*(state.day%7===0?0.5:1),0,100);}
-function beep(freq=440,ms=90,type='sine',volume=0.12) {
-  try {
-    audio ||= new (window.AudioContext||window.webkitAudioContext)();
-    if(audio.state==='suspended') audio.resume();
-    const osc=audio.createOscillator(), gain=audio.createGain();
-    osc.type=type;osc.frequency.value=freq;gain.gain.value=volume;
-    osc.connect(gain);gain.connect(audio.destination);
-    osc.start();osc.stop(audio.currentTime+ms/1000);
-  } catch(e) {/* audio is optional */}
-}
-function successSound() { [520,740,980].forEach((n,i)=>setTimeout(()=>beep(n,100),i*70)); }
-function failSound() {beep(240,180,'sawtooth');}
-let toastHandle;
-function toast(message) {
-  $('toast').textContent=message;
-  $('toast').style.display='block';
-  clearTimeout(toastHandle);
-  toastHandle=setTimeout(()=>$('toast').style.display='none',2800);
-}
-
-// ---------------- KAPLAY-rendered world ----------------
-function createVisual(obj,type,depth=4) {
-  // Game objects move with the KAPLAY camera; no 2D canvas context is used for the world.
-  obj.visual=K.add([
-    K.pos(obj.x*TILE,obj.y*TILE),K.z(depth),
-    {id:'waterlineVisual',draw() {drawSymbol(type,obj);}},
-  ]);
-}
-function drawSymbol(type,obj) {
-  switch(type) {
-    case 'player':
-      rect(9,25,5,7,C.brown);rect(18,25,5,7,C.brown);
-      rect(8,13,16,14,C.tan);rect(6,13,4,12,C.brown);rect(23,13,4,12,C.brown);
-      rect(10,5,13,10,C.gray);rect(12,8,9,5,C.cyan);rect(9,3,15,3,C.deep);
-      if(state.pipeMode){rect(25,17,7,6,C.lightGray);rect(27,15,3,10,C.cyan);}
-      break;
-    case 'town':
-      rect(3,14,26,16,C.darkGreen);poly([[2,14],[16,2],[30,14]],C.green);
-      rect(13,21,6,9,C.black);rect(6,18,5,4,C.gold);
-      if(obj.st>=2){circle(27,5,3,C.aqua);}
-      break;
-    case 'shop':
-      rect(5,12,23,17,C.brown);rect(3,7,26,7,C.orange);rect(9,19,6,10,C.shadow);
-      break;
-    case 'work':
-      rect(6,16,20,13,C.gray);rect(3,12,26,6,C.lightGray);rect(13,6,6,7,C.orange);
-      break;
-    case 'shelter':
-      poly([[3,29],[16,6],[29,29]],C.blue);line(16,8,16,29,C.aqua,2);rect(11,24,10,5,C.shadow);
-      break;
-    case 'post':
-      rect(10,13,12,17,C.gray);rect(6,5,20,10,C.black);rect(12,7,8,5,C.red);
-      break;
-    case 'well':
-      rect(7,16,18,14,C.gray);rect(9,19,14,8,C.cyan);rect(7,13,18,4,C.lightGray);
-      break;
-    case 'solar':
-      rect(14,21,4,10,C.lightGray);poly([[3,19],[11,8],[30,8],[27,19]],C.aqua);
-      line(10,13,29,13,C.blue,2);line(20,9,20,19,C.blue,2);
-      break;
-    case 'firepit':
-      rect(7,23,19,5,C.gray);poly([[12,25],[15,11],[18,20],[22,15],[24,25]],C.orange);
-      poly([[15,24],[18,17],[20,24]],C.gold);
-      break;
-    case 'garden':
-      rect(5,14,22,15,C.darkGreen);rect(8,16,4,10,C.leaf);rect(15,19,4,8,C.leaf);rect(22,16,3,10,C.leaf);
-      break;
-    case 'drop':
-      rect(7,12,19,16,C.gold);rect(13,15,7,6,C.red);rect(15,13,3,13,C.wine);
-      break;
-    case 'patrol':
-      circle(16,16,9,C.red);circle(16,16,4,C.black);
-      break;
-  }
-}
-function visibleBounds() {
-  const x0=clamp(Math.floor(player.x-K.width()/TILE/2)-3,0,WORLD-1);
-  const y0=clamp(Math.floor(player.y-K.height()/TILE/2)-3,0,WORLD-1);
-  const x1=clamp(Math.ceil(player.x+K.width()/TILE/2)+3,0,WORLD-1);
-  const y1=clamp(Math.ceil(player.y+K.height()/TILE/2)+3,0,WORLD-1);
-  return {x0,y0,x1,y1};
-}
-function drawTerrain() {
-  const {x0,y0,x1,y1}=visibleBounds();
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++) {
-    const t=world[y][x], px=x*TILE,py=y*TILE;
-    if(!t.exp){rect(px,py,TILE,TILE,C.void);continue;}
-    rect(px,py,TILE,TILE,t.dug?C.dug:t.reg===2?C.rock:t.reg===1?C.scrub:C.sand);
-    if(t.elev>1){rect(px+4,py+4,6,6,C.shade);rect(px+23,py+23,3,3,C.shade);}
-    if(t.junk && !t.dug){rect(px+10,py+10,9,8,C.scrap);rect(px+12,py+12,4,3,C.black);}
-    if(t.dug){rect(px+7,py+7,18,17,C.shade);rect(px+10,py+10,12,12,C.dug);}
-  }
-  // Pipe graph is sparse, so only connected segments are drawn.
-  for(const id of pipes) {
-    const [x,y]=id.split(',').map(Number);
-    if(x<x0||y<y0||x>x1||y>y1)continue;
-    const px=x*TILE+TILE/2,py=y*TILE+TILE/2;
-    for(const [dx,dy] of [[1,0],[0,1]]) if(pipes.has(key(x+dx,y+dy)))
-      line(px,py,px+dx*TILE,py+dy*TILE,C.cyan,5);
-    circle(px,py,5,C.cyan);
-  }
-  if(state.buildMode && state.selectedBuild && validTile(mouseTile.x,mouseTile.y)) {
-    const x=mouseTile.x*TILE,y=mouseTile.y*TILE;
-    // Outline from four KAPLAY line primitives.
-    line(x,y,x+TILE,y,C.aqua,2);line(x,y,x,y+TILE,C.aqua,2);
-    line(x+TILE,y,x+TILE,y+TILE,C.aqua,2);line(x,y+TILE,x+TILE,y+TILE,C.aqua,2);
-  }
-}
-function addTerrain() {
-  K.add([K.z(-20),{id:'terrainSystem',draw(){drawTerrain();}}]);
-}
-function removeVisuals() {
-  for(const group of [towns,shops,works,shelters,posts,patrols,structures])
-    for(const object of group) if(object.visual){ K.destroy(object.visual);delete object.visual; }
-}
-function installVisuals() {
-  for(const [group,type] of [[towns,'town'],[shops,'shop'],[works,'work'],[shelters,'shelter'],[posts,'post'],[structures,null]])
-    for(const obj of group) createVisual(obj,type||obj.t,3);
-  for(const obj of patrols) createVisual(obj,'patrol',6);
-}
-function spawnStructure(x,y,t) {
-  const obj={x,y,t};structures.push(obj);createVisual(obj,t,3);return obj;
-}
-function eraseStructure(obj) {
-  if(obj.visual)K.destroy(obj.visual);
-  structures.splice(structures.indexOf(obj),1);
-}
-function validTile(x,y) {return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<WORLD&&y<WORLD;}
-function updateMouse() {
-  const p=K.toWorld(K.mousePos());
-  mouseTile.x=Math.floor(p.x/TILE);mouseTile.y=Math.floor(p.y/TILE);
-}
-function updateCamera() {K.camPos(V((player.x+0.5)*TILE,(player.y+0.5)*TILE));}
-
-// ---------------- HUD and interactive location panels ----------------
-function showPanel(title,description,buttons) {
-  $('context-title').textContent=title;
-  $('context-desc').innerHTML=description;
-  const body=$('context-actions');body.replaceChildren();
-  for(const spec of buttons) {
-    const button=document.createElement('button');button.className='btn';
-    button.disabled=!!spec.disabled;
-    const label=document.createElement('span');label.textContent=spec.label;
-    const cost=document.createElement('span');cost.className='cost';cost.textContent=spec.cost||'';
-    button.append(label,cost);
-    button.addEventListener('click',()=>{spec.action();updateUI();});
-    body.append(button);
-  }
-  $('context-panel').style.display='block';
-}
-function closePanel() {$('context-panel').style.display='none';}
-function panelOpen() {return $('context-panel').style.display==='block';}
-function updateUI() {
-  const values={'ui-w':player.w,'ui-cap':player.cap,'ui-f':player.f,'ui-m':player.m,
-    'ui-c':player.c,'ui-p':player.p,'ui-junk':player.junk,'ui-wire':player.wire,'ui-bat':player.battery,
-    'ui-s':Math.floor(state.susp),'ui-d':state.day};
-  for(const [id,val] of Object.entries(values)) $(id).textContent=val;
-  $('ui-s').style.color=state.susp>70?'#ff4444':state.susp>30?'#ffa300':'#e5e9ea';
-  $('ui-time').textContent=String(Math.floor(state.time/60)).padStart(2,'0')+':'+String(Math.floor(state.time%60)).padStart(2,'0');
-  const weatherSymbol={clear:'☀️',sandstorm:'🌪️',heatwave:'🥵',rain:'🌧️'};
-  $('ui-weather').textContent=weatherSymbol[state.weather]+' '+state.weather.toUpperCase();
-  $('ui-mode').textContent=state.buildMode?'[PLACE '+state.selectedBuild.toUpperCase()+']':state.pipeMode?'[PIPE MODE]':'[DIG MODE]';
-  $('ui-mode').style.color=state.pipeMode||state.buildMode?'#00ccff':'#aaaaaa';
-}
-const mapctx=$('map').getContext('2d');
-function renderMinimap() {
-  const mw=$('map').width, step=mw/WORLD;
-  mapctx.fillStyle='#111';mapctx.fillRect(0,0,mw,mw);
-  for(let y=0;y<WORLD;y++)for(let x=0;x<WORLD;x++) {
-    if(!world[y][x].exp)continue;
-    const tile=world[y][x];mapctx.fillStyle=tile.dug?'#444':tile.reg===0?'#3d311e':tile.reg===1?'#2e412d':'#3d3d4c';
-    mapctx.fillRect(x*step,y*step,step+0.1,step+0.1);
-  }
-  mapctx.fillStyle='#00ccff';for(const id of pipes){const [x,y]=id.split(',').map(Number);mapctx.fillRect(x*step,y*step,Math.max(2,step),Math.max(2,step));}
-  mapctx.fillStyle='#39f080';for(const t of towns)mapctx.fillRect(t.x*step-1,t.y*step-1,4,4);
-  mapctx.fillStyle='#ff5656';for(const p of posts)mapctx.fillRect(p.x*step-1,p.y*step-1,4,4);
-  mapctx.fillStyle='#ffffff';mapctx.fillRect(player.x*step-2,player.y*step-2,5,5);
-}
-function updateOverlay() {
-  const overlay=$('overlay');
-  let a=state.time>1200||state.time<360?0.56:state.time>1080?0.33:0;
-  if(state.weather==='sandstorm')overlay.style.backgroundColor='rgba(145,95,42,0.17)';
-  else overlay.style.backgroundColor=state.time>1080&&state.time<=1200?`rgba(33,18,9,${a})`:`rgba(0,8,23,${a})`;
-}
-
-// ---------------- Interaction / resources / crafting ----------------
-function interact() {
-  for(const t of towns) if(t.x===player.x&&t.y===player.y) return openTown(t);
-  for(const s of shops) if(s.x===player.x&&s.y===player.y) return openShop();
-  for(const w of works) if(w.x===player.x&&w.y===player.y) return openCraft();
-  for(const s of shelters) if(s.x===player.x&&s.y===player.y) return openShelter();
-  for(const o of posts) if(o.x===player.x&&o.y===player.y) return openOutpost();
-  const found=structures.find(s=>s.x===player.x&&s.y===player.y);
-  if(!found){toast('Nothing to interact with here.');return;}
-  if(found.t==='well'||found.t==='solar'){
-    const avail=readWater(found.x,found.y);
-    if(avail>0&&player.w<player.cap){const take=Math.min(avail,player.cap-player.w);player.w+=take;writeWater(found.x,found.y,avail-take);toast(`Collected ${take} water.`);}
-    else toast(avail<=0?'No water available yet.':'Canteen full.');
-  } else if(found.t==='drop') {
-    player.w=Math.min(player.cap,player.w+9);player.junk+=3;
-    eraseStructure(found);toast('Airdrop recovered: +9 water, +3 junk');successSound();
-  } else if(found.t==='firepit') {
-    if(player.seeds>0){player.seeds--;player.f+=3;toast('Cooked seeds: +3 food.');}
-    else toast('Need seeds to cook.');
-  } else toast('You inspect the '+found.t+'.');
-}
-function openTown(t) {
-  showPanel('SETTLEMENT: '+t.name,`Stability: ${t.st}/3<br>Water deficit: ${t.need} L`,[
-    {label:'Donate water (up to 5 L)',disabled:player.w<=0||t.need<=0,action(){
-      const amt=Math.min(5,player.w,t.need);player.w-=amt;t.need-=amt;toast(`Donated ${amt} L`);openTown(t);
-    }},
-    {label:'Rest and end day',action:attemptSleep}
-  ]);
-}
-function openShop() {
-  showPanel('BLACK MARKET','Trade scarce resources:',[
-    {label:'Buy food',cost:'1 water',disabled:player.w<1,action(){player.w--;player.f++;toast('Bought food.');openShop();}},
-    {label:'Buy metal',cost:'1 food',disabled:player.f<1,action(){player.f--;player.m++;toast('Bought metal.');openShop();}},
-    {label:'Buy cloth',cost:'1 food',disabled:player.f<1,action(){player.f--;player.c++;toast('Bought cloth.');openShop();}},
-    {label:'Buy plastic',cost:'2 water',disabled:player.w<2,action(){player.w-=2;player.p++;toast('Bought plastic.');openShop();}},
-    {label:'Bribe (-15 suspicion)',cost:'2 cloth',disabled:player.c<2||state.susp===0,action(){player.c-=2;modifySusp(-15);toast('Bribe accepted.');openShop();}}
-  ]);
-}
-function openShelter(){showPanel('SAFE SHELTER','Lay low here.',[{label:'Rest and end day',action:attemptSleep}]);}
-function openOutpost() {
-  showPanel('REGIME OUTPOST','<span style="color:#ff6666">Highly guarded.</span>',[
-    {label:'Bribe guards',cost:'3 metal',disabled:player.m<3,action(){player.m-=3;modifySusp(-25);toast('Guards distracted.');openOutpost();}},
-    {label:'Sabotage (risky)',action(){if(Math.random()<0.4){player.f+=3;player.w=Math.min(player.cap,player.w+7);toast('Stole supplies!');}else{modifySusp(32);toast('Spotted!');}closePanel();}}
-  ]);
-}
-function hasResources(cost) {return Object.entries(cost).every(([name,amt])=>player[name]>=amt);}
-function spendResources(cost) {for(const [name,amt] of Object.entries(cost)) player[name]-=amt;}
-const buildCosts={firepit:{c:2,m:1},garden:{seeds:1,p:2}};
-function startBuild(type){state.selectedBuild=type;state.buildMode=true;closePanel();toast('Click a tile to place '+type+'. Esc to cancel.');}
-function attemptPlaceBuild(x,y) {
-  if(!state.buildMode||!state.selectedBuild)return;
-  if(!validTile(x,y))return toast('Outside map bounds.');
-  const type=state.selectedBuild,cost=buildCosts[type]||{};
-  if(!hasResources(cost))return toast('Not enough resources to build '+type+'.');
-  if(structures.some(o=>o.x===x&&o.y===y)||[...towns,...shops,...works,...shelters,...posts].some(o=>o.x===x&&o.y===y))
-    return toast('Tile already occupied.');
-  spendResources(cost);spawnStructure(x,y,type);
-  state.buildMode=false;state.selectedBuild=null;
-  successSound();toast('Built '+type.toUpperCase()+'.');
-}
-function startMinigame(name,target,durationMs,onSuccess) {
-  minigame={name,target,progress:0,timeLeft:durationMs,initialTime:durationMs,onSuccess};
-  $('mini-name').textContent='DIY ASSEMBLY: '+name;
-  $('mini-game').style.display='block';
-  updateMiniUI();toast('Rapidly tap SPACE to assemble '+name+'!');beep(980);
-}
-function updateMiniUI() {
-  if(!minigame)return;
-  $('mini-progress').style.width=(100*minigame.progress/minigame.target)+'%';
-  $('mini-time').style.width=(100*Math.max(0,minigame.timeLeft)/minigame.initialTime)+'%';
-  $('mini-progress-text').textContent=minigame.progress+' / '+minigame.target;
-}
-function finishMinigame(success) {
-  if(!minigame)return;
-  const result=minigame;minigame=null;
-  $('mini-game').style.display='none';
-  if(success){result.onSuccess();successSound();}else{toast('DIY '+result.name+' failed. Parts were lost.');failSound();}
-}
-function processJunk() {
-  if(player.junk<1)return toast('No junk to process.');
-  player.junk--;
-  const roll=Math.random();let name;
-  if(roll<0.32){player.m++;name='metal';}
-  else if(roll<0.58){player.c++;name='cloth';}
-  else if(roll<0.78){player.p++;name='plastic';}
-  else if(roll<0.90){player.wire++;name='wire';}
-  else {player.battery++;name='battery';}
-  beep(640);toast('Processed junk into '+name+'.');
-}
-function openCraft() {
-  showPanel('WORKBENCH — DIY CRAFTING','Build equipment, salvage scrap and research machinery.',[
-    {label:'Process junk',cost:'1 junk',disabled:player.junk<1,action(){processJunk();openCraft();}},
-    {label:'Place fire pit',cost:'2 cloth + 1 metal',disabled:!hasResources(buildCosts.firepit),action(){startBuild('firepit');}},
-    {label:'Place garden plot',cost:'1 seeds + 2 plastic',disabled:!hasResources(buildCosts.garden),action(){startBuild('garden');}},
-    {label:'Bio-filter research',cost:'1 cloth + 1 metal',disabled:tech.filter||player.c<1||player.m<1,action(){player.c--;player.m--;tech.filter=true;toast('Filter unlocked.');openCraft();}},
-    {label:'Build solar still',cost:'1 plastic + 2 metal',disabled:player.p<1||player.m<2,action(){player.p--;player.m-=2;spawnStructure(player.x,player.y,'solar');toast('Solar still placed.');openCraft();}},
-    {label:'Pipe technology',cost:'3 metal',disabled:tech.pipe||player.m<3,action(){player.m-=3;tech.pipe=true;toast('Pipes unlocked!');openCraft();}},
-    {label:'Water tank (+10 capacity)',cost:'2 plastic + 1 metal',disabled:player.p<2||player.m<1,action(){player.p-=2;player.m--;player.cap+=10;toast('Water capacity increased.');openCraft();}},
-    {label:'Water purifier (DIY)',cost:'Filter + 4 metal + 2 wire + 1 battery',disabled:tech.purifier||!tech.filter||player.m<4||player.wire<2||player.battery<1,action(){
-      player.m-=4;player.wire-=2;player.battery--;closePanel();
-      startMinigame('Water Purifier',15,5200,()=>{tech.purifier=true;toast('Purifier assembled! +35% yield.');});
-    }},
-    {label:'Reinforced pipe kit (DIY)',cost:'5 metal + 3 wire',disabled:tech.reinforced||player.m<5||player.wire<3,action(){
-      player.m-=5;player.wire-=3;closePanel();
-      startMinigame('Pipe Reinforcement',11,3800,()=>{tech.reinforced=true;toast('Pipes reinforced!');});
-    }},
-    {label:'Craft rope',cost:'4 junk',disabled:player.junk<4,action(){player.junk-=4;player.rope++;toast('Rope crafted.');openCraft();}}
-  ]);
-}
-function toggleMode() {state.pipeMode=!state.pipeMode;state.buildMode=false;state.selectedBuild=null;toast(state.pipeMode?'Pipe laying equipped.':'Shovel equipped.');updateUI();}
-function digOrPipe() {
-  if(state.pipeMode) {
-    if(!tech.pipe)return toast('Unlock pipe technology at the workbench first.');
-    if(player.m<1&&player.p<1)return toast('Need metal or plastic to lay pipe.');
-    const id=key(player.x,player.y);
-    if(pipes.has(id))return toast('Pipe already here.');
-    if(player.p>0)player.p--;else player.m--;
-    pipes.add(id);toast('Pipe laid.');beep(470);return;
-  }
-  const t=world[player.y][player.x];
-  if(t.dug)return toast('This ground is already dug.');
-  t.dug=true;modifySusp(nearPost(player.x,player.y)?9:2);
-  let chance=t.wc+(tech.filter?0.22:0),amt=t.reg===2?7:t.reg===1?4:3;
-  if(tech.purifier)amt=Math.floor(amt*1.35);
-  if(state.weather==='heatwave')amt=Math.floor(amt*0.65);
-  if(state.weather==='rain')chance+=0.25;
-  if(Math.random()<chance) {
-    player.w=Math.min(player.cap,player.w+amt);
-    spawnStructure(player.x,player.y,'well');
-    toast(`Aquifer struck! +${amt} water.`);
-  } else toast('Dry sand...');
-  if(t.junk) {
-    player.junk++;
-    if(Math.random()<0.32)player.wire++;
-    if(Math.random()<0.18)player.battery++;
-    t.junk=false;
-    toast('Buried scrap recovered! +1 junk.');
-  }
-  beep(180,65,'square',0.2);
-}
-
-// ---------------- Nightly simulation (ported from original) ----------------
-function triggerRandomEvent() {
-  const r=Math.random();
-  if(r<0.18){
-    const ids=Array.from(pipes).sort(()=>Math.random()-0.5).slice(0,Math.floor(pipes.size*0.28));
-    ids.forEach(id=>pipes.delete(id));modifySusp(12);toast('SANDSTORM! Pipes damaged.');
-  }else if(r<0.34){
-    const x=clamp(player.x+rnd(22)-11,0,WORLD-1),y=clamp(player.y+rnd(22)-11,0,WORLD-1);
-    spawnStructure(x,y,'drop');toast('CHARITY AIRDROP DETECTED!');successSound();
-  }else if(r<0.52){player.f+=2;player.junk+=4;toast('Friendly local donated rations and scrap.');}
-  else if(r<0.68){modifySusp(28);toast('Regime sweep!');}
-}
-function attemptSleep() {
-  if(!started||ended)return;
-  if(minigame)return toast('Finish assembly first.');
-  const safe=towns.some(t=>t.x===player.x&&t.y===player.y)||shelters.some(s=>s.x===player.x&&s.y===player.y);
-  if(!safe) {
-    if(!window.confirm('Unsafe place to sleep: suspicion will rise. Continue?'))return;
-    modifySusp(16);if(Math.random()<0.65&&player.f>0)player.f--;
-    toast('Slept rough.');
-  }else{modifySusp(-9);toast('Rested safely.');}
-  closePanel();processNight();
-}
-function processNight() {
-  player.f--;
-  if(player.f<0){player.f=0;modifySusp(14);toast('Starvation is increasing suspicion.');}
-  if(state.weather==='heatwave') {player.f=Math.max(0,player.f-1);toast('Heatwave depleted food.');}
-  if(state.weather==='rain'){
-    player.w=Math.min(player.cap,player.w+3);
-    for(let i=0;i<10;i++)addWater(rnd(WORLD),rnd(WORLD),3);
-    toast('Rain recharged the aquifers.');
-  }
-  for(const s of structures) {
-    if(s.t==='well')addWater(s.x,s.y,tech.purifier?5:4);
-    if(s.t==='solar')addWater(s.x,s.y,tech.purifier?4:3);
-    if(s.t==='garden'&&Math.random()<0.7)player.seeds=Math.min(player.seeds+3,30);
-  }
-  // BFS through an adjacent network of pipes, collecting from connected water sources.
-  for(const town of towns) {
-    if(town.need<=0)continue;
-    let need=town.need;
-    const seen=new Set([key(town.x,town.y)]),queue=[[town.x,town.y]];
-    for(let head=0;head<queue.length&&need>0;head++) {
-      const [x,y]=queue[head],avail=readWater(x,y);
-      if(avail>0){const taken=Math.min(avail,need);writeWater(x,y,avail-taken);need-=taken;}
-      for(const [dx,dy] of DIRS) {
-        const nx=x+dx,ny=y+dy,id=key(nx,ny);
-        if(validTile(nx,ny)&&pipes.has(id)&&!seen.has(id)) {seen.add(id);queue.push([nx,ny]);}
+      if (typeof kaplay !== 'function') {
+        document.body.innerHTML = '<div style="padding:30px;color:white;background:#16161c;font:18px sans-serif">KAPLAY could not load. Check your connection, or serve this file from a local HTTP server.</div>';
+        throw Error('KAPLAY script unavailable');
       }
-    }
-    town.need=need;
-  }
-  for(const town of towns) {
-    if(town.need<=0){town.st=Math.min(3,town.st+1);town.need=28+rnd(22);}
-    else town.st=Math.max(-2,town.st-1);
-  }
-  triggerRandomEvent();
-  const burstChance=tech.reinforced?0.12:0.37;
-  if(Math.random()<burstChance&&pipes.size>0){const ids=Array.from(pipes);pipes.delete(ids[rnd(ids.length)]);toast('A pipe burst overnight.');}
-  for(let i=towns.length-1;i>=0;i--)if(towns[i].st<-1) {
-    toast('Town '+towns[i].name+' has perished.');
-    if(towns[i].visual)K.destroy(towns[i].visual);
-    towns.splice(i,1);
-  }
-  const weather=state.day<6?['clear','clear','heatwave','rain']:['clear','sandstorm','heatwave','rain'];
-  state.weather=weather[rnd(weather.length)];
-  if(state.weather==='sandstorm')beep(90,500,'sawtooth',0.06);
-  if(state.weather==='rain'){beep(680,45);setTimeout(()=>beep(920,45),85);}
-  state.day++;state.time=480;
-  saveGame(true);
-  updateUI();renderMinimap();
-  if(state.susp>=100)endGame(false,'Regime forces arrested you.');
-  else if(towns.length===0)endGame(false,'All settlements perished.');
-  else if(towns.every(t=>t.st>=3))endGame(true,'All remaining towns are stable!');
-}
-function endGame(won,message) {
-  ended=true;
-  $('splash-text').innerHTML=(won?'MISSION SUCCESS':'MISSION FAILED')+'<p style="font-size:16px">'+message+'</p>';
-  $('splash').style.color=won?'#69ffba':'#ff6666';
-  $('splash').style.display='flex';
-}
 
-// ---------------- Full-state saves ----------------
-function copyPOI(group) {return group.map(({visual,...data})=>({...data}));}
-function saveGame(quiet=false) {
-  try {
-    K.setData(SAVE_ID,{
-      version:2,player:{...player},state:{...state,buildMode:false,selectedBuild:null},tech:{...tech},
-      world,structures:copyPOI(structures),pipes:[...pipes],tileWater,
-      towns:copyPOI(towns),shops:copyPOI(shops),works:copyPOI(works),
-      shelters:copyPOI(shelters),posts:copyPOI(posts),patrols:copyPOI(patrols)
-    });
-    if(!quiet)toast('Mission saved (K).');
-  }catch(e){console.error('Save error:',e);toast('Save failed: storage unavailable.');}
-}
-function loadGame() {
-  let saved;
-  try{saved=K.getData(SAVE_ID);}catch(e){console.error('Load error:',e);}
-  if(!saved||saved.version!==2||!Array.isArray(saved.world)||saved.world.length!==WORLD)
-    return toast('No compatible save found.');
-  removeVisuals();
-  player={...PLAYER_INIT,...saved.player};state={...STATE_INIT,...saved.state,buildMode:false,selectedBuild:null};
-  tech={...TECH_INIT,...saved.tech};world=saved.world;
-  structures=saved.structures||[];towns=saved.towns||[];shops=saved.shops||[];
-  works=saved.works||[];shelters=saved.shelters||[];posts=saved.posts||[];patrols=saved.patrols||[];
-  tileWater=saved.tileWater||{};pipes=new Set(saved.pipes||[]);
-  installVisuals();playerNode.pos=V(player.x*TILE,player.y*TILE);
-  updateCamera();renderMinimap();updateUI();closePanel();
-  minigame=null;$('mini-game').style.display='none';ended=false;$('splash').style.display='none';
-  if(!started)beginMission();
-  toast('Full world state restored.');
-}
+      const K = kaplay({
+        canvas: document.querySelector('#game'),
+        background: [5, 5, 7],
+        crisp: true,
+        pixelDensity: 1,
+        debug: false,
+        global: false,
+        focus: true,
+      });
+      const TILE = 32,
+        WORLD = 100,
+        DAY_MINS = 1440;
+      const DIRS = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1]
+      ];
+      const SAVE_ID = 'waterline_kaplay_v2';
+      const $ = (s) => document.getElementById(s);
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const key = (x, y) => x + ',' + y;
+      const rnd = (n) => Math.floor(Math.random() * n);
+      const C = {
+        void: K.rgb('#000000'),
+        sand: K.rgb('#2c2318'),
+        scrub: K.rgb('#253020'),
+        rock: K.rgb('#252530'),
+        dug: K.rgb('#34333a'),
+        shade: K.rgb('#181820'),
+        scrap: K.rgb('#8c9195'),
+        cyan: K.rgb('#00ccff'),
+        aqua: K.rgb('#6adcf4'),
+        blue: K.rgb('#174a67'),
+        white: K.rgb('#e8edef'),
+        orange: K.rgb('#ffa300'),
+        red: K.rgb('#f04c45'),
+        green: K.rgb('#30a964'),
+        darkGreen: K.rgb('#1c7142'),
+        black: K.rgb('#15151c'),
+        brown: K.rgb('#75502e'),
+        tan: K.rgb('#b49765'),
+        gray: K.rgb('#6c727c'),
+        lightGray: K.rgb('#abb6c0'),
+        gold: K.rgb('#f8d357'),
+        deep: K.rgb('#284451'),
+        shadow: K.rgb('#101319'),
+        leaf: K.rgb('#57bd53'),
+        wine: K.rgb('#902f2e'),
+      };
+      const V = (x, y) => K.vec2(x, y);
 
-// ---------------- KAPLAY lifecycle ----------------
-newGameData();
-addTerrain();
-installVisuals();
-const playerNode=K.add([K.pos(player.x*TILE,player.y*TILE),K.z(10),
-  {id:'operative',draw(){drawSymbol('player',player);}}]);
-updateCamera();renderMinimap();updateUI();
-function beginMission() {
-  if(started)return;
-  started=true;suppressUntil=K.time()+0.15;
-  $('intro').style.display='none';
-  K.canvas.focus();
-  toast('Mission start. Dig, craft and deliver water.');
-}
-$('intro').addEventListener('click',beginMission);
-$('restart-button').addEventListener('click',()=>location.reload());
-$('close-panel').addEventListener('click',closePanel);
+      function rect(x, y, w, h, col) {
+        K.drawRect({
+          pos: V(x, y),
+          width: w,
+          height: h,
+          color: col
+        });
+      }
 
-K.onKeyPress(()=>{if(!started)beginMission();});
-function canAct(){return started&&!ended&&!panelOpen()&&K.time()>=suppressUntil;}
-K.onKeyPress('space',()=>{
-  if(!canAct()&&!minigame)return;
-  if(minigame){minigame.progress++;beep(700+minigame.progress*23,35);
-    updateMiniUI();if(minigame.progress>=minigame.target)finishMinigame(true);
-  }else digOrPipe();
-});
-K.onKeyPress('e',()=>{if(canAct())interact();});
-K.onKeyPress('c',()=>{if(started&&!ended&&!minigame)openCraft();});
-K.onKeyPress('p',()=>{if(canAct()&&!minigame)toggleMode();});
-K.onKeyPress('enter',()=>{if(started&&!ended)attemptSleep();});
-K.onKeyPress('escape',()=>{
-  if(state.buildMode){state.buildMode=false;state.selectedBuild=null;toast('Placement cancelled.');}
-  closePanel();
-});
-K.onKeyPress('k',()=>{if(started)saveGame();});
-K.onKeyPress('l',()=>{if(started)loadGame();});
-// Ctrl+S is also supported, without conflicting with the movement key S.
-document.addEventListener('keydown',e=>{
-  if(e.ctrlKey&&e.key.toLowerCase()==='s'){e.preventDefault();if(started)saveGame();}
-  if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)&&e.target===K.canvas)e.preventDefault();
-});
-K.onMouseMove(()=>{if(started)updateMouse();});
-K.onMousePress('left',()=>{if(started&&!ended&&state.buildMode&&!panelOpen()){updateMouse();attemptPlaceBuild(mouseTile.x,mouseTile.y);}});
+      function line(x1, y1, x2, y2, col, w = 3) {
+        K.drawLine({
+          p1: V(x1, y1),
+          p2: V(x2, y2),
+          width: w,
+          color: col
+        });
+      }
 
-function movePlayer(dt) {
-  movementTimer=Math.max(0,movementTimer-dt);
-  let dx=0,dy=0;
-  if(K.isKeyDown('left')||K.isKeyDown('a'))dx--;
-  if(K.isKeyDown('right')||K.isKeyDown('d'))dx++;
-  if(K.isKeyDown('up')||K.isKeyDown('w'))dy--;
-  if(K.isKeyDown('down')||K.isKeyDown('s'))dy++;
-  if(!dx&&!dy){movementTimer=0;return;}
-  if(movementTimer>0)return;
-  const nextX=clamp(player.x+dx,0,WORLD-1),nextY=clamp(player.y+dy,0,WORLD-1);
-  if(nextX!==player.x||nextY!==player.y) {
-    player.x=nextX;player.y=nextY;
-    playerNode.pos=V(player.x*TILE,player.y*TILE);
-    updateCamera();reveal(player.x,player.y);
-  }
-  movementTimer=state.weather==='sandstorm'?0.235:0.145;
-}
-function updatePatrols(dt) {
-  for(const p of patrols) {
-    p.a+=(Math.random()-0.5)*0.65*Math.sqrt(dt*60);
-    const nx=p.x+Math.cos(p.a)*p.speed*dt*60,ny=p.y+Math.sin(p.a)*p.speed*dt*60;
-    if(Math.hypot(nx-p.ox,ny-p.oy)>5||!validTile(Math.floor(nx),Math.floor(ny)))p.a+=Math.PI;
-    else{p.x=nx;p.y=ny;}
-    if(p.visual)p.visual.pos=V(p.x*TILE,p.y*TILE);
-    if(Math.hypot(player.x-p.x,player.y-p.y)<2) {
-      modifySusp(dt*3.5);
-      if(K.time()-lastWarning>4){toast('Patrol nearby — keep moving!');lastWarning=K.time();}
-    }
-  }
-  if(state.susp>=100)endGame(false,'Regime forces arrested you.');
-}
-K.onUpdate(()=>{
-  if(!started||ended)return;
-  const dt=Math.min(K.dt(),0.10);
-  if(minigame){minigame.timeLeft-=dt*1000;updateMiniUI();if(minigame.timeLeft<=0)finishMinigame(false);}
-  if(!panelOpen()&&!minigame)movePlayer(dt);
-  state.time+=dt*5.2;
-  if(state.time>=DAY_MINS)state.time=480;
-  updatePatrols(dt);
-  hudTimer+=dt;mapTimer+=dt;
-  if(hudTimer>=0.12){hudTimer=0;updateUI();updateOverlay();}
-  if(mapTimer>=0.25){mapTimer=0;renderMinimap();}
-});
+      function poly(points, col) {
+        K.drawPolygon({
+          pts: points.map(p => V(p[0], p[1])),
+          color: col
+        });
+      }
 
-// Minimal debugging / smoke-test surface (no mutable globals beyond this object).
-window.WaterlineDebug=Object.freeze({
-  getPlayer:()=>({...player}),getState:()=>({...state}),getTech:()=>({...tech}),
-  getTowns:()=>copyPOI(towns),getPipes:()=>[...pipes],
-  beginMission, save:saveGame,load:loadGame, processNight,
-  getEngine:()=>K,
-});
-</script>
-</body>
+      function circle(x, y, r, col) {
+        K.drawCircle({
+          pos: V(x, y),
+          radius: r,
+          color: col
+        });
+      }
+
+      function textLabel(s, x, y, size = 11, col = C.white) {
+        K.drawText({
+          text: String(s),
+          pos: V(x, y),
+          size,
+          font: 'monospace',
+          color: col
+        });
+      }
+
+      const PLAYER_INIT = {
+        x: 50,
+        y: 50,
+        w: 0,
+        cap: 15,
+        f: 3,
+        m: 2,
+        c: 2,
+        p: 1,
+        junk: 0,
+        seeds: 0,
+        rope: 0,
+        wire: 0,
+        battery: 0
+      };
+      const STATE_INIT = {
+        susp: 0,
+        day: 1,
+        time: 480,
+        pipeMode: false,
+        buildMode: false,
+        selectedBuild: null,
+        weather: 'clear'
+      };
+      const TECH_INIT = {
+        filter: false,
+        solar: false,
+        pipe: false,
+        purifier: false,
+        reinforced: false
+      };
+      let player = {
+        ...PLAYER_INIT
+      };
+      let state = {
+        ...STATE_INIT
+      };
+      let tech = {
+        ...TECH_INIT
+      };
+      let world = [],
+        towns = [],
+        shops = [],
+        works = [],
+        shelters = [],
+        posts = [],
+        patrols = [],
+        structures = [];
+      let pipes = new Set(),
+        tileWater = {};
+      let started = false,
+        ended = false,
+        minigame = null,
+        lastWarning = 0;
+      let hudTimer = 0,
+        movementTimer = 0,
+        mapTimer = 0;
+      let suppressUntil = 0;
+      let mouseTile = {
+        x: 50,
+        y: 50
+      };
+      let audio = null;
+
+      function reveal(x, y) {
+        for (let dy = -2; dy <= 2; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const tx = x + dx,
+              ty = y + dy;
+            if (tx >= 0 && ty >= 0 && tx < WORLD && ty < WORLD) world[ty][tx].exp = true;
+          }
+      }
+
+      function newWorld() {
+        world = Array.from({
+          length: WORLD
+        }, () => Array.from({
+          length: WORLD
+        }, () => {
+          const roll = Math.random(),
+            reg = roll < 0.6 ? 0 : roll < 0.85 ? 1 : 2;
+          return {
+            dug: false,
+            exp: false,
+            reg,
+            wc: reg === 0 ? 0.05 : reg === 1 ? 0.15 : 0.25,
+            junk: Math.random() < (reg === 2 ? 0.35 : 0.18),
+            elev: rnd(4)
+          };
+        }));
+      }
+      const townNames = ['Dusthaven', 'Ashen Wells', 'Scorchgate', 'Mirage Outpost', 'Drybone Crossing', 'Ruinridge', 'Sandveil', 'Cactus Refuge', 'Wastemarch', 'Oasis Fall'];
+
+      function spawnPOI(count, info, reserved) {
+        const arr = [];
+        let tries = 0;
+        while (arr.length < count && tries++ < 10000) {
+          const x = 5 + rnd(WORLD - 10),
+            y = 5 + rnd(WORLD - 10);
+          if (reserved.some(a => Math.hypot(a.x - x, a.y - y) < 5)) continue;
+          const poi = {
+            ...info,
+            x,
+            y
+          };
+          arr.push(poi);
+          reserved.push(poi);
+        }
+        return arr;
+      }
+
+      function newGameData() {
+        player = {
+          ...PLAYER_INIT
+        };
+        state = {
+          ...STATE_INIT
+        };
+        tech = {
+          ...TECH_INIT
+        };
+        structures = [];
+        pipes = new Set();
+        tileWater = {};
+        newWorld();
+        const used = [{
+          x: player.x,
+          y: player.y
+        }];
+        towns = spawnPOI(4, {
+          need: 30,
+          st: 0,
+          name: ''
+        }, used);
+        towns.forEach(t => t.name = townNames[rnd(townNames.length)]);
+        shops = spawnPOI(3, {
+          type: 'shop'
+        }, used);
+        works = spawnPOI(3, {
+          type: 'work'
+        }, used);
+        shelters = spawnPOI(4, {
+          type: 'shelter'
+        }, used);
+        posts = spawnPOI(5, {
+          type: 'post',
+          r: 5
+        }, used);
+        patrols = [];
+        for (const post of posts)
+          for (let i = 0; i < 2; i++) patrols.push({
+            x: post.x,
+            y: post.y,
+            ox: post.x,
+            oy: post.y,
+            a: Math.random() * Math.PI * 2,
+            speed: 0.03 + Math.random() * 0.02
+          });
+        reveal(player.x, player.y);
+      }
+
+      function readWater(x, y) {
+        return tileWater[key(x, y)] || 0;
+      }
+
+      function writeWater(x, y, v) {
+        const id = key(x, y);
+        if (v <= 0) delete tileWater[id];
+        else tileWater[id] = v;
+      }
+
+      function addWater(x, y, v) {
+        writeWater(x, y, readWater(x, y) + v);
+      }
+
+      function nearPost(x, y) {
+        return posts.some(o => Math.hypot(o.x - x, o.y - y) <= o.r);
+      }
+
+      function modifySusp(delta) {
+        state.susp = clamp(state.susp + delta * (state.day % 7 === 0 ? 0.5 : 1), 0, 100);
+      }
+
+      function beep(freq = 440, ms = 90, type = 'sine', volume = 0.12) {
+        try {
+          audio ||= new(window.AudioContext || window.webkitAudioContext)();
+          if (audio.state === 'suspended') audio.resume();
+          const osc = audio.createOscillator(),
+            gain = audio.createGain();
+          osc.type = type;
+          osc.frequency.value = freq;
+          gain.gain.value = volume;
+          osc.connect(gain);
+          gain.connect(audio.destination);
+          osc.start();
+          osc.stop(audio.currentTime + ms / 1000);
+        } catch (e) {
+          /* audio is optional */ }
+      }
+
+      function successSound() {
+        [520, 740, 980].forEach((n, i) => setTimeout(() => beep(n, 100), i * 70));
+      }
+
+      function failSound() {
+        beep(240, 180, 'sawtooth');
+      }
+      let toastHandle;
+
+      function toast(message) {
+        $('toast').textContent = message;
+        $('toast').style.display = 'block';
+        clearTimeout(toastHandle);
+        toastHandle = setTimeout(() => $('toast').style.display = 'none', 2800);
+      }
+
+      // ---------------- KAPLAY-rendered world ----------------
+      function createVisual(obj, type, depth = 4) {
+        // Game objects move with the KAPLAY camera; no 2D canvas context is used for the world.
+        obj.visual = K.add([
+          K.pos(obj.x * TILE, obj.y * TILE), K.z(depth),
+          {
+            id: 'waterlineVisual',
+            draw() {
+              drawSymbol(type, obj);
+            }
+          },
+        ]);
+      }
+
+      function drawSymbol(type, obj) {
+        switch (type) {
+          case 'player':
+            rect(9, 25, 5, 7, C.brown);
+            rect(18, 25, 5, 7, C.brown);
+            rect(8, 13, 16, 14, C.tan);
+            rect(6, 13, 4, 12, C.brown);
+            rect(23, 13, 4, 12, C.brown);
+            rect(10, 5, 13, 10, C.gray);
+            rect(12, 8, 9, 5, C.cyan);
+            rect(9, 3, 15, 3, C.deep);
+            if (state.pipeMode) {
+              rect(25, 17, 7, 6, C.lightGray);
+              rect(27, 15, 3, 10, C.cyan);
+            }
+            break;
+          case 'town':
+            rect(3, 14, 26, 16, C.darkGreen);
+            poly([
+              [2, 14],
+              [16, 2],
+              [30, 14]
+            ], C.green);
+            rect(13, 21, 6, 9, C.black);
+            rect(6, 18, 5, 4, C.gold);
+            if (obj.st >= 2) {
+              circle(27, 5, 3, C.aqua);
+            }
+            break;
+          case 'shop':
+            rect(5, 12, 23, 17, C.brown);
+            rect(3, 7, 26, 7, C.orange);
+            rect(9, 19, 6, 10, C.shadow);
+            break;
+          case 'work':
+            rect(6, 16, 20, 13, C.gray);
+            rect(3, 12, 26, 6, C.lightGray);
+            rect(13, 6, 6, 7, C.orange);
+            break;
+          case 'shelter':
+            poly([
+              [3, 29],
+              [16, 6],
+              [29, 29]
+            ], C.blue);
+            line(16, 8, 16, 29, C.aqua, 2);
+            rect(11, 24, 10, 5, C.shadow);
+            break;
+          case 'post':
+            rect(10, 13, 12, 17, C.gray);
+            rect(6, 5, 20, 10, C.black);
+            rect(12, 7, 8, 5, C.red);
+            break;
+          case 'well':
+            rect(7, 16, 18, 14, C.gray);
+            rect(9, 19, 14, 8, C.cyan);
+            rect(7, 13, 18, 4, C.lightGray);
+            break;
+          case 'solar':
+            rect(14, 21, 4, 10, C.lightGray);
+            poly([
+              [3, 19],
+              [11, 8],
+              [30, 8],
+              [27, 19]
+            ], C.aqua);
+            line(10, 13, 29, 13, C.blue, 2);
+            line(20, 9, 20, 19, C.blue, 2);
+            break;
+          case 'firepit':
+            rect(7, 23, 19, 5, C.gray);
+            poly([
+              [12, 25],
+              [15, 11],
+              [18, 20],
+              [22, 15],
+              [24, 25]
+            ], C.orange);
+            poly([
+              [15, 24],
+              [18, 17],
+              [20, 24]
+            ], C.gold);
+            break;
+          case 'garden':
+            rect(5, 14, 22, 15, C.darkGreen);
+            rect(8, 16, 4, 10, C.leaf);
+            rect(15, 19, 4, 8, C.leaf);
+            rect(22, 16, 3, 10, C.leaf);
+            break;
+          case 'drop':
+            rect(7, 12, 19, 16, C.gold);
+            rect(13, 15, 7, 6, C.red);
+            rect(15, 13, 3, 13, C.wine);
+            break;
+          case 'patrol':
+            circle(16, 16, 9, C.red);
+            circle(16, 16, 4, C.black);
+            break;
+        }
+      }
+
+      function visibleBounds() {
+        const x0 = clamp(Math.floor(player.x - K.width() / TILE / 2) - 3, 0, WORLD - 1);
+        const y0 = clamp(Math.floor(player.y - K.height() / TILE / 2) - 3, 0, WORLD - 1);
+        const x1 = clamp(Math.ceil(player.x + K.width() / TILE / 2) + 3, 0, WORLD - 1);
+        const y1 = clamp(Math.ceil(player.y + K.height() / TILE / 2) + 3, 0, WORLD - 1);
+        return {
+          x0,
+          y0,
+          x1,
+          y1
+        };
+      }
+
+      function drawTerrain() {
+        const {
+          x0,
+          y0,
+          x1,
+          y1
+        } = visibleBounds();
+        for (let y = y0; y <= y1; y++)
+          for (let x = x0; x <= x1; x++) {
+            const t = world[y][x],
+              px = x * TILE,
+              py = y * TILE;
+            if (!t.exp) {
+              rect(px, py, TILE, TILE, C.void);
+              continue;
+            }
+            rect(px, py, TILE, TILE, t.dug ? C.dug : t.reg === 2 ? C.rock : t.reg === 1 ? C.scrub : C.sand);
+            if (t.elev > 1) {
+              rect(px + 4, py + 4, 6, 6, C.shade);
+              rect(px + 23, py + 23, 3, 3, C.shade);
+            }
+            if (t.junk && !t.dug) {
+              rect(px + 10, py + 10, 9, 8, C.scrap);
+              rect(px + 12, py + 12, 4, 3, C.black);
+            }
+            if (t.dug) {
+              rect(px + 7, py + 7, 18, 17, C.shade);
+              rect(px + 10, py + 10, 12, 12, C.dug);
+            }
+          }
+        // Pipe graph is sparse, so only connected segments are drawn.
+        for (const id of pipes) {
+          const [x, y] = id.split(',').map(Number);
+          if (x < x0 || y < y0 || x > x1 || y > y1) continue;
+          const px = x * TILE + TILE / 2,
+            py = y * TILE + TILE / 2;
+          for (const [dx, dy] of [
+              [1, 0],
+              [0, 1]
+            ])
+            if (pipes.has(key(x + dx, y + dy)))
+              line(px, py, px + dx * TILE, py + dy * TILE, C.cyan, 5);
+          circle(px, py, 5, C.cyan);
+        }
+        if (state.buildMode && state.selectedBuild && validTile(mouseTile.x, mouseTile.y)) {
+          const x = mouseTile.x * TILE,
+            y = mouseTile.y * TILE;
+          // Outline from four KAPLAY line primitives.
+          line(x, y, x + TILE, y, C.aqua, 2);
+          line(x, y, x, y + TILE, C.aqua, 2);
+          line(x + TILE, y, x + TILE, y + TILE, C.aqua, 2);
+          line(x, y + TILE, x + TILE, y + TILE, C.aqua, 2);
+        }
+      }
+
+      function addTerrain() {
+        K.add([K.z(-20), {
+          id: 'terrainSystem',
+          draw() {
+            drawTerrain();
+          }
+        }]);
+      }
+
+      function removeVisuals() {
+        for (const group of [towns, shops, works, shelters, posts, patrols, structures])
+          for (const object of group)
+            if (object.visual) {
+              K.destroy(object.visual);
+              delete object.visual;
+            }
+      }
+
+      function installVisuals() {
+        for (const [group, type] of [
+            [towns, 'town'],
+            [shops, 'shop'],
+            [works, 'work'],
+            [shelters, 'shelter'],
+            [posts, 'post'],
+            [structures, null]
+          ])
+          for (const obj of group) createVisual(obj, type || obj.t, 3);
+        for (const obj of patrols) createVisual(obj, 'patrol', 6);
+      }
+
+      function spawnStructure(x, y, t) {
+        const obj = {
+          x,
+          y,
+          t
+        };
+        structures.push(obj);
+        createVisual(obj, t, 3);
+        return obj;
+      }
+
+      function eraseStructure(obj) {
+        if (obj.visual) K.destroy(obj.visual);
+        structures.splice(structures.indexOf(obj), 1);
+      }
+
+      function validTile(x, y) {
+        return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < WORLD && y < WORLD;
+      }
+
+      function updateMouse() {
+        const p = K.toWorld(K.mousePos());
+        mouseTile.x = Math.floor(p.x / TILE);
+        mouseTile.y = Math.floor(p.y / TILE);
+      }
+
+      function updateCamera() {
+        K.camPos(V((player.x + 0.5) * TILE, (player.y + 0.5) * TILE));
+      }
+
+      // ---------------- HUD and interactive location panels ----------------
+      function showPanel(title, description, buttons) {
+        $('context-title').textContent = title;
+        $('context-desc').innerHTML = description;
+        const body = $('context-actions');
+        body.replaceChildren();
+        for (const spec of buttons) {
+          const button = document.createElement('button');
+          button.className = 'btn';
+          button.disabled = !!spec.disabled;
+          const label = document.createElement('span');
+          label.textContent = spec.label;
+          const cost = document.createElement('span');
+          cost.className = 'cost';
+          cost.textContent = spec.cost || '';
+          button.append(label, cost);
+          button.addEventListener('click', () => {
+            spec.action();
+            updateUI();
+          });
+          body.append(button);
+        }
+        $('context-panel').style.display = 'block';
+      }
+
+      function closePanel() {
+        $('context-panel').style.display = 'none';
+      }
+
+      function panelOpen() {
+        return $('context-panel').style.display === 'block';
+      }
+
+      function updateUI() {
+        const values = {
+          'ui-w': player.w,
+          'ui-cap': player.cap,
+          'ui-f': player.f,
+          'ui-m': player.m,
+          'ui-c': player.c,
+          'ui-p': player.p,
+          'ui-junk': player.junk,
+          'ui-wire': player.wire,
+          'ui-bat': player.battery,
+          'ui-s': Math.floor(state.susp),
+          'ui-d': state.day
+        };
+        for (const [id, val] of Object.entries(values)) $(id).textContent = val;
+        $('ui-s').style.color = state.susp > 70 ? '#ff4444' : state.susp > 30 ? '#ffa300' : '#e5e9ea';
+        $('ui-time').textContent = String(Math.floor(state.time / 60)).padStart(2, '0') + ':' + String(Math.floor(state.time % 60)).padStart(2, '0');
+        const weatherSymbol = {
+          clear: '☀️',
+          sandstorm: '🌪️',
+          heatwave: '🥵',
+          rain: '🌧️'
+        };
+        $('ui-weather').textContent = weatherSymbol[state.weather] + ' ' + state.weather.toUpperCase();
+        $('ui-mode').textContent = state.buildMode ? '[PLACE ' + state.selectedBuild.toUpperCase() + ']' : state.pipeMode ? '[PIPE MODE]' : '[DIG MODE]';
+        $('ui-mode').style.color = state.pipeMode || state.buildMode ? '#00ccff' : '#aaaaaa';
+      }
+      const mapctx = $('map').getContext('2d');
+
+      function renderMinimap() {
+        const mw = $('map').width,
+          step = mw / WORLD;
+        mapctx.fillStyle = '#111';
+        mapctx.fillRect(0, 0, mw, mw);
+        for (let y = 0; y < WORLD; y++)
+          for (let x = 0; x < WORLD; x++) {
+            if (!world[y][x].exp) continue;
+            const tile = world[y][x];
+            mapctx.fillStyle = tile.dug ? '#444' : tile.reg === 0 ? '#3d311e' : tile.reg === 1 ? '#2e412d' : '#3d3d4c';
+            mapctx.fillRect(x * step, y * step, step + 0.1, step + 0.1);
+          }
+        mapctx.fillStyle = '#00ccff';
+        for (const id of pipes) {
+          const [x, y] = id.split(',').map(Number);
+          mapctx.fillRect(x * step, y * step, Math.max(2, step), Math.max(2, step));
+        }
+        mapctx.fillStyle = '#39f080';
+        for (const t of towns) mapctx.fillRect(t.x * step - 1, t.y * step - 1, 4, 4);
+        mapctx.fillStyle = '#ff5656';
+        for (const p of posts) mapctx.fillRect(p.x * step - 1, p.y * step - 1, 4, 4);
+        mapctx.fillStyle = '#ffffff';
+        mapctx.fillRect(player.x * step - 2, player.y * step - 2, 5, 5);
+      }
+
+      function updateOverlay() {
+        const overlay = $('overlay');
+        let a = state.time > 1200 || state.time < 360 ? 0.56 : state.time > 1080 ? 0.33 : 0;
+        if (state.weather === 'sandstorm') overlay.style.backgroundColor = 'rgba(145,95,42,0.17)';
+        else overlay.style.backgroundColor = state.time > 1080 && state.time <= 1200 ? `rgba(33,18,9,${a})` : `rgba(0,8,23,${a})`;
+      }
+
+      // ---------------- Interaction / resources / crafting ----------------
+      function interact() {
+        for (const t of towns)
+          if (t.x === player.x && t.y === player.y) return openTown(t);
+        for (const s of shops)
+          if (s.x === player.x && s.y === player.y) return openShop();
+        for (const w of works)
+          if (w.x === player.x && w.y === player.y) return openCraft();
+        for (const s of shelters)
+          if (s.x === player.x && s.y === player.y) return openShelter();
+        for (const o of posts)
+          if (o.x === player.x && o.y === player.y) return openOutpost();
+        const found = structures.find(s => s.x === player.x && s.y === player.y);
+        if (!found) {
+          toast('Nothing to interact with here.');
+          return;
+        }
+        if (found.t === 'well' || found.t === 'solar') {
+          const avail = readWater(found.x, found.y);
+          if (avail > 0 && player.w < player.cap) {
+            const take = Math.min(avail, player.cap - player.w);
+            player.w += take;
+            writeWater(found.x, found.y, avail - take);
+            toast(`Collected ${take} water.`);
+          } else toast(avail <= 0 ? 'No water available yet.' : 'Canteen full.');
+        } else if (found.t === 'drop') {
+          player.w = Math.min(player.cap, player.w + 9);
+          player.junk += 3;
+          eraseStructure(found);
+          toast('Airdrop recovered: +9 water, +3 junk');
+          successSound();
+        } else if (found.t === 'firepit') {
+          if (player.seeds > 0) {
+            player.seeds--;
+            player.f += 3;
+            toast('Cooked seeds: +3 food.');
+          } else toast('Need seeds to cook.');
+        } else toast('You inspect the ' + found.t + '.');
+      }
+
+      function openTown(t) {
+        showPanel('SETTLEMENT: ' + t.name, `Stability: ${t.st}/3<br>Water deficit: ${t.need} L`, [{
+            label: 'Donate water (up to 5 L)',
+            disabled: player.w <= 0 || t.need <= 0,
+            action() {
+              const amt = Math.min(5, player.w, t.need);
+              player.w -= amt;
+              t.need -= amt;
+              toast(`Donated ${amt} L`);
+              openTown(t);
+            }
+          },
+          {
+            label: 'Rest and end day',
+            action: attemptSleep
+          }
+        ]);
+      }
+
+      function openShop() {
+        showPanel('BLACK MARKET', 'Trade scarce resources:', [{
+            label: 'Buy food',
+            cost: '1 water',
+            disabled: player.w < 1,
+            action() {
+              player.w--;
+              player.f++;
+              toast('Bought food.');
+              openShop();
+            }
+          },
+          {
+            label: 'Buy metal',
+            cost: '1 food',
+            disabled: player.f < 1,
+            action() {
+              player.f--;
+              player.m++;
+              toast('Bought metal.');
+              openShop();
+            }
+          },
+          {
+            label: 'Buy cloth',
+            cost: '1 food',
+            disabled: player.f < 1,
+            action() {
+              player.f--;
+              player.c++;
+              toast('Bought cloth.');
+              openShop();
+            }
+          },
+          {
+            label: 'Buy plastic',
+            cost: '2 water',
+            disabled: player.w < 2,
+            action() {
+              player.w -= 2;
+              player.p++;
+              toast('Bought plastic.');
+              openShop();
+            }
+          },
+          {
+            label: 'Bribe (-15 suspicion)',
+            cost: '2 cloth',
+            disabled: player.c < 2 || state.susp === 0,
+            action() {
+              player.c -= 2;
+              modifySusp(-15);
+              toast('Bribe accepted.');
+              openShop();
+            }
+          }
+        ]);
+      }
+
+      function openShelter() {
+        showPanel('SAFE SHELTER', 'Lay low here.', [{
+          label: 'Rest and end day',
+          action: attemptSleep
+        }]);
+      }
+
+      function openOutpost() {
+        showPanel('REGIME OUTPOST', '<span style="color:#ff6666">Highly guarded.</span>', [{
+            label: 'Bribe guards',
+            cost: '3 metal',
+            disabled: player.m < 3,
+            action() {
+              player.m -= 3;
+              modifySusp(-25);
+              toast('Guards distracted.');
+              openOutpost();
+            }
+          },
+          {
+            label: 'Sabotage (risky)',
+            action() {
+              if (Math.random() < 0.4) {
+                player.f += 3;
+                player.w = Math.min(player.cap, player.w + 7);
+                toast('Stole supplies!');
+              } else {
+                modifySusp(32);
+                toast('Spotted!');
+              }
+              closePanel();
+            }
+          }
+        ]);
+      }
+
+      function hasResources(cost) {
+        return Object.entries(cost).every(([name, amt]) => player[name] >= amt);
+      }
+
+      function spendResources(cost) {
+        for (const [name, amt] of Object.entries(cost)) player[name] -= amt;
+      }
+      const buildCosts = {
+        firepit: {
+          c: 2,
+          m: 1
+        },
+        garden: {
+          seeds: 1,
+          p: 2
+        }
+      };
+
+      function startBuild(type) {
+        state.selectedBuild = type;
+        state.buildMode = true;
+        closePanel();
+        toast('Click a tile to place ' + type + '. Esc to cancel.');
+      }
+
+      function attemptPlaceBuild(x, y) {
+        if (!state.buildMode || !state.selectedBuild) return;
+        if (!validTile(x, y)) return toast('Outside map bounds.');
+        const type = state.selectedBuild,
+          cost = buildCosts[type] || {};
+        if (!hasResources(cost)) return toast('Not enough resources to build ' + type + '.');
+        if (structures.some(o => o.x === x && o.y === y) || [...towns, ...shops, ...works, ...shelters, ...posts].some(o => o.x === x && o.y === y))
+          return toast('Tile already occupied.');
+        spendResources(cost);
+        spawnStructure(x, y, type);
+        state.buildMode = false;
+        state.selectedBuild = null;
+        successSound();
+        toast('Built ' + type.toUpperCase() + '.');
+      }
+
+      function startMinigame(name, target, durationMs, onSuccess) {
+        minigame = {
+          name,
+          target,
+          progress: 0,
+          timeLeft: durationMs,
+          initialTime: durationMs,
+          onSuccess
+        };
+        $('mini-name').textContent = 'DIY ASSEMBLY: ' + name;
+        $('mini-game').style.display = 'block';
+        updateMiniUI();
+        toast('Rapidly tap SPACE to assemble ' + name + '!');
+        beep(980);
+      }
+
+      function updateMiniUI() {
+        if (!minigame) return;
+        $('mini-progress').style.width = (100 * minigame.progress / minigame.target) + '%';
+        $('mini-time').style.width = (100 * Math.max(0, minigame.timeLeft) / minigame.initialTime) + '%';
+        $('mini-progress-text').textContent = minigame.progress + ' / ' + minigame.target;
+      }
+
+      function finishMinigame(success) {
+        if (!minigame) return;
+        const result = minigame;
+        minigame = null;
+        $('mini-game').style.display = 'none';
+        if (success) {
+          result.onSuccess();
+          successSound();
+        } else {
+          toast('DIY ' + result.name + ' failed. Parts were lost.');
+          failSound();
+        }
+      }
+
+      function processJunk() {
+        if (player.junk < 1) return toast('No junk to process.');
+        player.junk--;
+        const roll = Math.random();
+        let name;
+        if (roll < 0.32) {
+          player.m++;
+          name = 'metal';
+        } else if (roll < 0.58) {
+          player.c++;
+          name = 'cloth';
+        } else if (roll < 0.78) {
+          player.p++;
+          name = 'plastic';
+        } else if (roll < 0.90) {
+          player.wire++;
+          name = 'wire';
+        } else {
+          player.battery++;
+          name = 'battery';
+        }
+        beep(640);
+        toast('Processed junk into ' + name + '.');
+      }
+
+      function openCraft() {
+        showPanel('WORKBENCH — DIY CRAFTING', 'Build equipment, salvage scrap and research machinery.', [{
+            label: 'Process junk',
+            cost: '1 junk',
+            disabled: player.junk < 1,
+            action() {
+              processJunk();
+              openCraft();
+            }
+          },
+          {
+            label: 'Place fire pit',
+            cost: '2 cloth + 1 metal',
+            disabled: !hasResources(buildCosts.firepit),
+            action() {
+              startBuild('firepit');
+            }
+          },
+          {
+            label: 'Place garden plot',
+            cost: '1 seeds + 2 plastic',
+            disabled: !hasResources(buildCosts.garden),
+            action() {
+              startBuild('garden');
+            }
+          },
+          {
+            label: 'Bio-filter research',
+            cost: '1 cloth + 1 metal',
+            disabled: tech.filter || player.c < 1 || player.m < 1,
+            action() {
+              player.c--;
+              player.m--;
+              tech.filter = true;
+              toast('Filter unlocked.');
+              openCraft();
+            }
+          },
+          {
+            label: 'Build solar still',
+            cost: '1 plastic + 2 metal',
+            disabled: player.p < 1 || player.m < 2,
+            action() {
+              player.p--;
+              player.m -= 2;
+              spawnStructure(player.x, player.y, 'solar');
+              toast('Solar still placed.');
+              openCraft();
+            }
+          },
+          {
+            label: 'Pipe technology',
+            cost: '3 metal',
+            disabled: tech.pipe || player.m < 3,
+            action() {
+              player.m -= 3;
+              tech.pipe = true;
+              toast('Pipes unlocked!');
+              openCraft();
+            }
+          },
+          {
+            label: 'Water tank (+10 capacity)',
+            cost: '2 plastic + 1 metal',
+            disabled: player.p < 2 || player.m < 1,
+            action() {
+              player.p -= 2;
+              player.m--;
+              player.cap += 10;
+              toast('Water capacity increased.');
+              openCraft();
+            }
+          },
+          {
+            label: 'Water purifier (DIY)',
+            cost: 'Filter + 4 metal + 2 wire + 1 battery',
+            disabled: tech.purifier || !tech.filter || player.m < 4 || player.wire < 2 || player.battery < 1,
+            action() {
+              player.m -= 4;
+              player.wire -= 2;
+              player.battery--;
+              closePanel();
+              startMinigame('Water Purifier', 15, 5200, () => {
+                tech.purifier = true;
+                toast('Purifier assembled! +35% yield.');
+              });
+            }
+          },
+          {
+            label: 'Reinforced pipe kit (DIY)',
+            cost: '5 metal + 3 wire',
+            disabled: tech.reinforced || player.m < 5 || player.wire < 3,
+            action() {
+              player.m -= 5;
+              player.wire -= 3;
+              closePanel();
+              startMinigame('Pipe Reinforcement', 11, 3800, () => {
+                tech.reinforced = true;
+                toast('Pipes reinforced!');
+              });
+            }
+          },
+          {
+            label: 'Craft rope',
+            cost: '4 junk',
+            disabled: player.junk < 4,
+            action() {
+              player.junk -= 4;
+              player.rope++;
+              toast('Rope crafted.');
+              openCraft();
+            }
+          }
+        ]);
+      }
+
+      function toggleMode() {
+        state.pipeMode = !state.pipeMode;
+        state.buildMode = false;
+        state.selectedBuild = null;
+        toast(state.pipeMode ? 'Pipe laying equipped.' : 'Shovel equipped.');
+        updateUI();
+      }
+
+      function digOrPipe() {
+        if (state.pipeMode) {
+          if (!tech.pipe) return toast('Unlock pipe technology at the workbench first.');
+          if (player.m < 1 && player.p < 1) return toast('Need metal or plastic to lay pipe.');
+          const id = key(player.x, player.y);
+          if (pipes.has(id)) return toast('Pipe already here.');
+          if (player.p > 0) player.p--;
+          else player.m--;
+          pipes.add(id);
+          toast('Pipe laid.');
+          beep(470);
+          return;
+        }
+        const t = world[player.y][player.x];
+        if (t.dug) return toast('This ground is already dug.');
+        t.dug = true;
+        modifySusp(nearPost(player.x, player.y) ? 9 : 2);
+        let chance = t.wc + (tech.filter ? 0.22 : 0),
+          amt = t.reg === 2 ? 7 : t.reg === 1 ? 4 : 3;
+        if (tech.purifier) amt = Math.floor(amt * 1.35);
+        if (state.weather === 'heatwave') amt = Math.floor(amt * 0.65);
+        if (state.weather === 'rain') chance += 0.25;
+        if (Math.random() < chance) {
+          player.w = Math.min(player.cap, player.w + amt);
+          spawnStructure(player.x, player.y, 'well');
+          toast(`Aquifer struck! +${amt} water.`);
+        } else toast('Dry sand...');
+        if (t.junk) {
+          player.junk++;
+          if (Math.random() < 0.32) player.wire++;
+          if (Math.random() < 0.18) player.battery++;
+          t.junk = false;
+          toast('Buried scrap recovered! +1 junk.');
+        }
+        beep(180, 65, 'square', 0.2);
+      }
+
+      // ---------------- Nightly simulation (ported from original) ----------------
+      function triggerRandomEvent() {
+        const r = Math.random();
+        if (r < 0.18) {
+          const ids = Array.from(pipes).sort(() => Math.random() - 0.5).slice(0, Math.floor(pipes.size * 0.28));
+          ids.forEach(id => pipes.delete(id));
+          modifySusp(12);
+          toast('SANDSTORM! Pipes damaged.');
+        } else if (r < 0.34) {
+          const x = clamp(player.x + rnd(22) - 11, 0, WORLD - 1),
+            y = clamp(player.y + rnd(22) - 11, 0, WORLD - 1);
+          spawnStructure(x, y, 'drop');
+          toast('CHARITY AIRDROP DETECTED!');
+          successSound();
+        } else if (r < 0.52) {
+          player.f += 2;
+          player.junk += 4;
+          toast('Friendly local donated rations and scrap.');
+        } else if (r < 0.68) {
+          modifySusp(28);
+          toast('Regime sweep!');
+        }
+      }
+
+      function attemptSleep() {
+        if (!started || ended) return;
+        if (minigame) return toast('Finish assembly first.');
+        const safe = towns.some(t => t.x === player.x && t.y === player.y) || shelters.some(s => s.x === player.x && s.y === player.y);
+        if (!safe) {
+          if (!window.confirm('Unsafe place to sleep: suspicion will rise. Continue?')) return;
+          modifySusp(16);
+          if (Math.random() < 0.65 && player.f > 0) player.f--;
+          toast('Slept rough.');
+        } else {
+          modifySusp(-9);
+          toast('Rested safely.');
+        }
+        closePanel();
+        processNight();
+      }
+
+      function processNight() {
+        player.f--;
+        if (player.f < 0) {
+          player.f = 0;
+          modifySusp(14);
+          toast('Starvation is increasing suspicion.');
+        }
+        if (state.weather === 'heatwave') {
+          player.f = Math.max(0, player.f - 1);
+          toast('Heatwave depleted food.');
+        }
+        if (state.weather === 'rain') {
+          player.w = Math.min(player.cap, player.w + 3);
+          for (let i = 0; i < 10; i++) addWater(rnd(WORLD), rnd(WORLD), 3);
+          toast('Rain recharged the aquifers.');
+        }
+        for (const s of structures) {
+          if (s.t === 'well') addWater(s.x, s.y, tech.purifier ? 5 : 4);
+          if (s.t === 'solar') addWater(s.x, s.y, tech.purifier ? 4 : 3);
+          if (s.t === 'garden' && Math.random() < 0.7) player.seeds = Math.min(player.seeds + 3, 30);
+        }
+        // BFS through an adjacent network of pipes, collecting from connected water sources.
+        for (const town of towns) {
+          if (town.need <= 0) continue;
+          let need = town.need;
+          const seen = new Set([key(town.x, town.y)]),
+            queue = [
+              [town.x, town.y]
+            ];
+          for (let head = 0; head < queue.length && need > 0; head++) {
+            const [x, y] = queue[head], avail = readWater(x, y);
+            if (avail > 0) {
+              const taken = Math.min(avail, need);
+              writeWater(x, y, avail - taken);
+              need -= taken;
+            }
+            for (const [dx, dy] of DIRS) {
+              const nx = x + dx,
+                ny = y + dy,
+                id = key(nx, ny);
+              if (validTile(nx, ny) && pipes.has(id) && !seen.has(id)) {
+                seen.add(id);
+                queue.push([nx, ny]);
+              }
+            }
+          }
+          town.need = need;
+        }
+        for (const town of towns) {
+          if (town.need <= 0) {
+            town.st = Math.min(3, town.st + 1);
+            town.need = 28 + rnd(22);
+          } else town.st = Math.max(-2, town.st - 1);
+        }
+        triggerRandomEvent();
+        const burstChance = tech.reinforced ? 0.12 : 0.37;
+        if (Math.random() < burstChance && pipes.size > 0) {
+          const ids = Array.from(pipes);
+          pipes.delete(ids[rnd(ids.length)]);
+          toast('A pipe burst overnight.');
+        }
+        for (let i = towns.length - 1; i >= 0; i--)
+          if (towns[i].st < -1) {
+            toast('Town ' + towns[i].name + ' has perished.');
+            if (towns[i].visual) K.destroy(towns[i].visual);
+            towns.splice(i, 1);
+          }
+        const weather = state.day < 6 ? ['clear', 'clear', 'heatwave', 'rain'] : ['clear', 'sandstorm', 'heatwave', 'rain'];
+        state.weather = weather[rnd(weather.length)];
+        if (state.weather === 'sandstorm') beep(90, 500, 'sawtooth', 0.06);
+        if (state.weather === 'rain') {
+          beep(680, 45);
+          setTimeout(() => beep(920, 45), 85);
+        }
+        state.day++;
+        state.time = 480;
+        saveGame(true);
+        updateUI();
+        renderMinimap();
+        if (state.susp >= 100) endGame(false, 'Regime forces arrested you.');
+        else if (towns.length === 0) endGame(false, 'All settlements perished.');
+        else if (towns.every(t => t.st >= 3)) endGame(true, 'All remaining towns are stable!');
+      }
+
+      function endGame(won, message) {
+        ended = true;
+        $('splash-text').innerHTML = (won ? 'MISSION SUCCESS' : 'MISSION FAILED') + '<p style="font-size:16px">' + message + '</p>';
+        $('splash').style.color = won ? '#69ffba' : '#ff6666';
+        $('splash').style.display = 'flex';
+      }
+
+      // ---------------- Full-state saves ----------------
+      function copyPOI(group) {
+        return group.map(({
+          visual,
+          ...data
+        }) => ({
+          ...data
+        }));
+      }
+
+      function saveGame(quiet = false) {
+        try {
+          K.setData(SAVE_ID, {
+            version: 2,
+            player: {
+              ...player
+            },
+            state: {
+              ...state,
+              buildMode: false,
+              selectedBuild: null
+            },
+            tech: {
+              ...tech
+            },
+            world,
+            structures: copyPOI(structures),
+            pipes: [...pipes],
+            tileWater,
+            towns: copyPOI(towns),
+            shops: copyPOI(shops),
+            works: copyPOI(works),
+            shelters: copyPOI(shelters),
+            posts: copyPOI(posts),
+            patrols: copyPOI(patrols)
+          });
+          if (!quiet) toast('Mission saved (K).');
+        } catch (e) {
+          console.error('Save error:', e);
+          toast('Save failed: storage unavailable.');
+        }
+      }
+
+      function loadGame() {
+        let saved;
+        try {
+          saved = K.getData(SAVE_ID);
+        } catch (e) {
+          console.error('Load error:', e);
+        }
+        if (!saved || saved.version !== 2 || !Array.isArray(saved.world) || saved.world.length !== WORLD)
+          return toast('No compatible save found.');
+        removeVisuals();
+        player = {
+          ...PLAYER_INIT,
+          ...saved.player
+        };
+        state = {
+          ...STATE_INIT,
+          ...saved.state,
+          buildMode: false,
+          selectedBuild: null
+        };
+        tech = {
+          ...TECH_INIT,
+          ...saved.tech
+        };
+        world = saved.world;
+        structures = saved.structures || [];
+        towns = saved.towns || [];
+        shops = saved.shops || [];
+        works = saved.works || [];
+        shelters = saved.shelters || [];
+        posts = saved.posts || [];
+        patrols = saved.patrols || [];
+        tileWater = saved.tileWater || {};
+        pipes = new Set(saved.pipes || []);
+        installVisuals();
+        playerNode.pos = V(player.x * TILE, player.y * TILE);
+        updateCamera();
+        renderMinimap();
+        updateUI();
+        closePanel();
+        minigame = null;
+        $('mini-game').style.display = 'none';
+        ended = false;
+        $('splash').style.display = 'none';
+        if (!started) beginMission();
+        toast('Full world state restored.');
+      }
+
+      // ---------------- KAPLAY lifecycle ----------------
+      newGameData();
+      addTerrain();
+      installVisuals();
+      const playerNode = K.add([K.pos(player.x * TILE, player.y * TILE), K.z(10),
+        {
+          id: 'operative',
+          draw() {
+            drawSymbol('player', player);
+          }
+        }
+      ]);
+      updateCamera();
+      renderMinimap();
+      updateUI();
+
+      function beginMission() {
+        if (started) return;
+        started = true;
+        suppressUntil = K.time() + 0.15;
+        $('intro').style.display = 'none';
+        K.canvas.focus();
+        toast('Mission start. Dig, craft and deliver water.');
+      }
+      $('intro').addEventListener('click', beginMission);
+      $('restart-button').addEventListener('click', () => location.reload());
+      $('close-panel').addEventListener('click', closePanel);
+
+      K.onKeyPress(() => {
+        if (!started) beginMission();
+      });
+
+      function canAct() {
+        return started && !ended && !panelOpen() && K.time() >= suppressUntil;
+      }
+      K.onKeyPress('space', () => {
+        if (!canAct() && !minigame) return;
+        if (minigame) {
+          minigame.progress++;
+          beep(700 + minigame.progress * 23, 35);
+          updateMiniUI();
+          if (minigame.progress >= minigame.target) finishMinigame(true);
+        } else digOrPipe();
+      });
+      K.onKeyPress('e', () => {
+        if (canAct()) interact();
+      });
+      K.onKeyPress('c', () => {
+        if (started && !ended && !minigame) openCraft();
+      });
+      K.onKeyPress('p', () => {
+        if (canAct() && !minigame) toggleMode();
+      });
+      K.onKeyPress('enter', () => {
+        if (started && !ended) attemptSleep();
+      });
+      K.onKeyPress('escape', () => {
+        if (state.buildMode) {
+          state.buildMode = false;
+          state.selectedBuild = null;
+          toast('Placement cancelled.');
+        }
+        closePanel();
+      });
+      K.onKeyPress('k', () => {
+        if (started) saveGame();
+      });
+      K.onKeyPress('l', () => {
+        if (started) loadGame();
+      });
+      // Ctrl+S is also supported, without conflicting with the movement key S.
+      document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          if (started) saveGame();
+        }
+        if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && e.target === K.canvas) e.preventDefault();
+      });
+      K.onMouseMove(() => {
+        if (started) updateMouse();
+      });
+      K.onMousePress('left', () => {
+        if (started && !ended && state.buildMode && !panelOpen()) {
+          updateMouse();
+          attemptPlaceBuild(mouseTile.x, mouseTile.y);
+        }
+      });
+
+      function movePlayer(dt) {
+        movementTimer = Math.max(0, movementTimer - dt);
+        let dx = 0,
+          dy = 0;
+        if (K.isKeyDown('left') || K.isKeyDown('a')) dx--;
+        if (K.isKeyDown('right') || K.isKeyDown('d')) dx++;
+        if (K.isKeyDown('up') || K.isKeyDown('w')) dy--;
+        if (K.isKeyDown('down') || K.isKeyDown('s')) dy++;
+        if (!dx && !dy) {
+          movementTimer = 0;
+          return;
+        }
+        if (movementTimer > 0) return;
+        const nextX = clamp(player.x + dx, 0, WORLD - 1),
+          nextY = clamp(player.y + dy, 0, WORLD - 1);
+        if (nextX !== player.x || nextY !== player.y) {
+          player.x = nextX;
+          player.y = nextY;
+          playerNode.pos = V(player.x * TILE, player.y * TILE);
+          updateCamera();
+          reveal(player.x, player.y);
+        }
+        movementTimer = state.weather === 'sandstorm' ? 0.235 : 0.145;
+      }
+
+      function updatePatrols(dt) {
+        for (const p of patrols) {
+          p.a += (Math.random() - 0.5) * 0.65 * Math.sqrt(dt * 60);
+          const nx = p.x + Math.cos(p.a) * p.speed * dt * 60,
+            ny = p.y + Math.sin(p.a) * p.speed * dt * 60;
+          if (Math.hypot(nx - p.ox, ny - p.oy) > 5 || !validTile(Math.floor(nx), Math.floor(ny))) p.a += Math.PI;
+          else {
+            p.x = nx;
+            p.y = ny;
+          }
+          if (p.visual) p.visual.pos = V(p.x * TILE, p.y * TILE);
+          if (Math.hypot(player.x - p.x, player.y - p.y) < 2) {
+            modifySusp(dt * 3.5);
+            if (K.time() - lastWarning > 4) {
+              toast('Patrol nearby — keep moving!');
+              lastWarning = K.time();
+            }
+          }
+        }
+        if (state.susp >= 100) endGame(false, 'Regime forces arrested you.');
+      }
+      K.onUpdate(() => {
+        if (!started || ended) return;
+        const dt = Math.min(K.dt(), 0.10);
+        if (minigame) {
+          minigame.timeLeft -= dt * 1000;
+          updateMiniUI();
+          if (minigame.timeLeft <= 0) finishMinigame(false);
+        }
+        if (!panelOpen() && !minigame) movePlayer(dt);
+        state.time += dt * 5.2;
+        if (state.time >= DAY_MINS) state.time = 480;
+        updatePatrols(dt);
+        hudTimer += dt;
+        mapTimer += dt;
+        if (hudTimer >= 0.12) {
+          hudTimer = 0;
+          updateUI();
+          updateOverlay();
+        }
+        if (mapTimer >= 0.25) {
+          mapTimer = 0;
+          renderMinimap();
+        }
+      });
+
+      // Minimal debugging / smoke-test surface (no mutable globals beyond this object).
+      window.WaterlineDebug = Object.freeze({
+        getPlayer: () => ({
+          ...player
+        }),
+        getState: () => ({
+          ...state
+        }),
+        getTech: () => ({
+          ...tech
+        }),
+        getTowns: () => copyPOI(towns),
+        getPipes: () => [...pipes],
+        beginMission,
+        save: saveGame,
+        load: loadGame,
+        processNight,
+        getEngine: () => K,
+      });
+    </script>
+  </body>
 </html>
