@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WATERLINE — Compact KAPLAY</title>
+<style>
+    :root {
+        --bg: #0a0a0c; --panel: #151518; --border: #333;
+        --text: #e0e0e0; --accent: #00ccff; --warn: #ff4444;
+        --metal: #a0a0b0; --cloth: #d0c0a0; --plastic: #ffaa00;
+        --food: #88ff88; --junk: #aaa;
+    }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; overflow:hidden; user-select:none; }
+    #intro { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:200; text-align:center; color:#fff; }
+    #splash { position:fixed; inset:0; background:rgba(0,0,0,0.98); display:none; align-items:center; justify-content:center; flex-direction:column; z-index:300; font-size:2em; text-shadow:0 0 20px #f00; color:#fff; }
+    #ui-top { position: fixed; top: 0; left: 0; right: 0; height: 40px; background: rgba(10,10,12,0.9); border-bottom: 2px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 100; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 0 #000; }
+    .stat { display: flex; align-items: center; gap: 5px; }
+    .val { color: var(--accent); }
+    .warn-val { color: var(--warn); }
+    #game-container { position: relative; width: 100vw; height: 100vh; }
+    canvas { display: block; image-rendering: pixelated; }
+    #minimap-container { position: fixed; top: 50px; right: 10px; border: 2px solid var(--border); background: #000; z-index: 50; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+    #context-panel { position: fixed; bottom: 10px; right: 10px; width: 340px; background: rgba(20,20,25,0.95); border: 1px solid var(--accent); padding: 15px; display: none; z-index: 60; border-radius: 4px; box-shadow: 0 0 15px rgba(0, 204, 255, 0.1); }
+    #context-title { font-size: 18px; margin-bottom: 5px; color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 5px; }
+    #context-desc { font-size: 12px; color: #aaa; margin-bottom: 15px; min-height: 30px; }
+    .btn { display: block; width: 100%; background: #222; color: #fff; border: 1px solid #444; padding: 10px; margin-bottom: 8px; cursor: pointer; text-align: left; transition: 0.2s; border-radius: 3px; }
+    .btn:hover:not(:disabled) { background: #333; border-color: var(--accent); padding-left: 15px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-close { background: #422; text-align: center; margin-top: 15px; }
+    .btn-close:hover { background: #622; border-color: var(--warn); padding-left: 10px; }
+    .cost { float: right; font-size: 11px; color: #aaa; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--border); padding: 10px 20px; border-radius: 20px; font-weight: bold; display: none; z-index: 100; transition: opacity 0.3s; }
+    #controls-legend { position: fixed; left: 10px; bottom: 10px; font-size: 11px; color: #888; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 4px; pointer-events: none; }
+    #controls-legend kbd { background: #333; padding: 2px 5px; border-radius: 3px; color: #ddd; }
+    #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; transition: background-color 2s ease; }
+
+/* KAPLAY handles the world; CSS is only the interface. */
+#game {position:absolute;inset:0;width:100%;height:100%;outline:none;}
+#intro {cursor:pointer;padding:24px;box-sizing:border-box;}
+#intro h1 {color:#00ccff;letter-spacing:0.2em;font-size:clamp(36px,6vw,72px);margin-bottom:16px;}
+#ui-top {gap:12px;flex-wrap:wrap;height:auto;min-height:42px;padding:5px 10px;box-sizing:border-box;}
+#mini-game {position:fixed;z-index:65;top:37%;left:50%;transform:translate(-50%,-50%);width:min(460px,90vw);padding:24px 28px;background:rgba(10,12,25,.96);border:4px solid #00ccff;text-align:center;box-shadow:0 16px 50px #000;}
+#mini-game h2 {font-size:21px;color:#fff;margin:0;}
+#mini-game p {font-size:13px;color:#ddd;}
+.mini-track {height:13px;background:#161d23;margin:15px 0;border:1px solid #4d6067;}
+.mini-track>div {height:100%;background:#00e9a4;width:0;}
+.time-track {height:9px;}
+.time-track>div {background:#ffcc44;width:100%;}
+#context-panel {max-height:min(70vh,650px);overflow:auto;box-sizing:border-box;}
+#controls-legend {z-index:48;line-height:1.8;}
+@media(max-width:850px) {#controls-legend {font-size:10px;bottom:4px;left:4px;}#context-panel {width:min(340px,95vw);}#ui-top{font-size:11px;}#minimap-container{top:90px;}}
+
+</style>
+</head>
+<body>
+
+<div id="intro">
+    <h1>WATERLINE</h1>
+    <p style="max-width:600px;font-size:1.1em;">
+        You are a special operative sent by an international charity into a war-torn desert nation ruled by a brutal totalitarian regime.<br><br>
+        Undercover as a simple worker, you must dig wells, lay pipes, and build automation to deliver water before entire towns perish.<br>
+        Sleep under friendly locals’ floorboards. Stay hidden.<br><br>
+        The quota grows. Disasters strike. Charity airdrops are your only backup.<br><br>
+        <strong>Press any key or click here to begin your mission.</strong>
+    </p>
+</div>
+
+<div id="splash"><div id="splash-text"></div><button id="restart-button" style="margin-top:30px;padding:15px 30px;font-size:1em;">RESTART MISSION</button></div>
+
+<div id="ui-top">
+    <div class="stat">💧 Water: <span id="ui-w" class="val">0</span> / <span id="ui-cap">15</span></div>
+    <div class="stat" style="color:var(--food)">🍞 Food: <span id="ui-f" class="val" style="color:var(--food)">3</span></div>
+    <div class="stat">⚙️ <span id="ui-m" style="color:var(--metal)">2</span> | 🧵 <span id="ui-c" style="color:var(--cloth)">2</span> | 🛢️ <span id="ui-p" style="color:var(--plastic)">1</span> | 🗑️ <span id="ui-junk" style="color:var(--junk)">0</span> | 🔌 <span id="ui-wire">0</span> | 🔋 <span id="ui-bat">0</span></div>
+    <div class="stat">👁️ Suspicion: <span id="ui-s" class="warn-val">0</span>%</div>
+    <div class="stat">Day <span id="ui-d" class="val">1</span> - <span id="ui-time">08:00</span></div>
+    <div class="stat" id="ui-weather-stat">🌤️ <span id="ui-weather" class="val">CLEAR</span></div>
+    <div class="stat" id="ui-mode" style="color:#aaa;">[DIG MODE]</div>
+</div>
+
+<div id="game-container">
+    <canvas id="game" tabindex="0" aria-label="WATERLINE game world"></canvas>
+    <div id="overlay"></div>
+    
+    <div id="minimap-container">
+        <canvas id="map" width="150" height="150"></canvas>
+    </div>
+
+    <div id="context-panel">
+        <div id="context-title">LOCATION</div>
+        <div id="context-desc">Description</div>
+        <div id="context-actions"></div>
+        <button class="btn btn-close" id="close-panel">Close [ESC]</button>
+    </div>
+
+    <div id="toast" role="status">Message here</div>
+    <div id="mini-game" aria-live="polite" style="display:none">
+      <h2 id="mini-name">DIY ASSEMBLY</h2>
+      <p>RAPIDLY PRESS SPACE! <span id="mini-progress-text">0 / 0</span></p>
+      <div class="mini-track"><div id="mini-progress"></div></div>
+      <div class="mini-track time-track"><div id="mini-time"></div></div>
+    </div>
+
+    <div id="controls-legend">
+        <div><kbd>WASD</kbd> / <kbd>Arrows</kbd> Move</div>
+        <div><kbd>SPACE</kbd> Dig / Pipe</div>
+        <div><kbd>E</kbd> Interact</div>
+        <div><kbd>C</kbd> Workbench (DIY crafting)</div>
+        <div><kbd>P</kbd> Toggle Mode</div>
+        <div><kbd>ENTER</kbd> Sleep</div>
+        <div><kbd>K</kbd> / <kbd>Ctrl+S</kbd> Save | <kbd>L</kbd> Load</div>
+    </div>
+</div>
+
+
+<script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
+<script src="./waterline.js"></script>
+</body>
+</html>
